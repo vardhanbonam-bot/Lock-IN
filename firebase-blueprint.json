@@ -1,0 +1,80 @@
+{
+  "collections": {
+    "days": {
+      "description": "Daily protocol logs tracking wake times, water intake, rehab routines, deep work, and daily KPIs",
+      "fields": {
+        "date": "string",
+        "wakeTime": "string",
+        "targetWakeWindow": "string",
+        "noPhoneHour": "boolean",
+        "noPhoneNote": "string",
+        "waterFirstGlass": "string",
+        "waterTotalGlasses": "number",
+        "meditationDone": "boolean",
+        "meditationDuration": "number",
+        "readingWhat": "string",
+        "readingDuration": "number",
+        "morningWalkDistance": "number",
+        "morningWalkFeel": "string",
+        "preWorkoutSnack": "string",
+        "rehab1": "map",
+        "breakfastTime": "string",
+        "breakfastWhat": "string",
+        "deepWork1Task": "string",
+        "deepWork1Hours": "number",
+        "deepWork1Focus": "number",
+        "lunchTime": "string",
+        "lunchWhat": "string",
+        "napDuration": "number",
+        "napFeel": "string",
+        "hobbyWhat": "string",
+        "hobbyDuration": "number",
+        "eveningSnack": "string",
+        "deepWork2Task": "string",
+        "deepWork2Hours": "number",
+        "deepWork2Focus": "number",
+        "rehab2": "map",
+        "dinnerTime": "string",
+        "dinnerWhat": "string",
+        "journalLines": "string",
+        "sleepTime": "string",
+        "kpiPainScore": "number",
+        "kpiMoodScore": "number",
+        "kpiSleepHours": "number",
+        "kpiPagesRead": "number",
+        "nonNegRehab": "boolean",
+        "nonNegMeditation": "boolean",
+        "nonNegWaterNutrition": "boolean",
+        "bonusReading": "boolean",
+        "bonusJournal": "boolean",
+        "bonusDeepStudy": "boolean",
+        "bonusFocusProtected": "boolean",
+        "weeklyWins": "string",
+        "weeklyLosses": "string",
+        "weeklyData": "string",
+        "weeklyBottlenecks": "string",
+        "weeklyExperiments": "string",
+        "weeklyPriorities": "string",
+        "weeklyGratitude": "string"
+      }
+    },
+    "expenses": {
+      "description": "Logged dynamic expense items",
+      "fields": {
+        "id": "string",
+        "date": "string",
+        "amount": "number",
+        "category": "string",
+        "paymentMethod": "string",
+        "note": "string"
+      }
+    },
+    "budgets": {
+      "description": "Category monthly expenditure budget limits",
+      "fields": {
+        "category": "string",
+        "limit": "number"
+      }
+    }
+  }
+}

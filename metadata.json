@@ -1,0 +1,6 @@
+{
+  "name": "LOCKED IN",
+  "description": "A high-energy, motivational personal daily tracker and expense tracker for a structured self-improvement grind.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

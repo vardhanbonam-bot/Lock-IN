@@ -21,6 +21,7 @@ export interface DayData {
   morningWalkDistance: number; // km
   morningWalkFeel: string;
   preWorkoutSnack: string;
+  rehabFocusText?: string; // Day-to-day custom rehab focus
   rehab1: RehabSession;
   breakfastTime: string;
   breakfastWhat: string;
@@ -65,6 +66,7 @@ export interface DayData {
   bonusJournal: boolean;
   bonusDeepStudy: boolean;
   bonusFocusProtected: boolean;
+  isConfirmed?: boolean;
 
   // Weekly (Sunday only)
   weeklyWins: string;

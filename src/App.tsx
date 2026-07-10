@@ -23,6 +23,7 @@ import {
 } from './firebaseService';
 import TrackerTab from './components/TrackerTab';
 import ExpensesTab from './components/ExpensesTab';
+import HistoryTab from './components/HistoryTab';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Flame, Calendar, CreditCard, ClipboardList, TrendingUp, Zap, 
@@ -40,7 +41,7 @@ export default function App() {
 
   // Active navigation states
   const [selectedDate, setSelectedDate] = useState<string>('2026-07-10'); // Default to Today
-  const [activeTab, setActiveTab] = useState<'tracker' | 'expenses'>('tracker');
+  const [activeTab, setActiveTab] = useState<'tracker' | 'expenses' | 'history'>('tracker');
 
   // Hardcoded current date representation
   const TODAY_STR = '2026-07-10';
@@ -338,10 +339,10 @@ export default function App() {
 
 
             {/* TAB CONTROL SWITCHER PILL */}
-            <div className="bg-[#1A1A24] rounded-full p-1 flex border border-brand-border/40">
+            <div className="bg-[#1A1A24] rounded-full p-1 flex border border-brand-border/40 font-mono">
               <button
                 onClick={() => setActiveTab('tracker')}
-                className={`px-5 py-2 rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-300 ${
+                className={`px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-300 ${
                   activeTab === 'tracker'
                     ? 'bg-brand-purple text-white font-black shadow-[0_0_15px_rgba(139,92,246,0.4)]'
                     : 'text-gray-400 hover:text-white'
@@ -351,13 +352,23 @@ export default function App() {
               </button>
               <button
                 onClick={() => setActiveTab('expenses')}
-                className={`px-5 py-2 rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-300 ${
+                className={`px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-300 ${
                   activeTab === 'expenses'
                     ? 'bg-brand-purple text-white font-black shadow-[0_0_15px_rgba(139,92,246,0.4)]'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
                 Expenses
+              </button>
+              <button
+                onClick={() => setActiveTab('history')}
+                className={`px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-300 ${
+                  activeTab === 'history'
+                    ? 'bg-brand-purple text-white font-black shadow-[0_0_15px_rgba(139,92,246,0.4)]'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                History Logs
               </button>
             </div>
           </div>
@@ -429,7 +440,7 @@ export default function App() {
                 streakCount={streakCount}
               />
             </motion.div>
-          ) : (
+          ) : activeTab === 'expenses' ? (
             <motion.div
               key="expenses"
               initial={{ opacity: 0, y: 15 }}
@@ -447,6 +458,20 @@ export default function App() {
                 onDeleteCategory={handleDeleteCategory}
                 budgets={budgets}
                 onUpdateBudget={handleUpdateBudget}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="history"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25 }}
+            >
+              <HistoryTab 
+                days={days}
+                onSelectDate={setSelectedDate}
+                onSwitchTab={setActiveTab}
               />
             </motion.div>
           )}

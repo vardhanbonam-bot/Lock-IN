@@ -52,6 +52,7 @@ export function createBlankDay(date: string): DayData {
     morningWalkDistance: 0,
     morningWalkFeel: '',
     preWorkoutSnack: '',
+    rehabFocusText: '',
     rehab1: {
       exercises: DEFAULT_REHAB_EXERCISES_1.map(e => ({ ...e, done: false })),
       painBefore: 5,
@@ -98,7 +99,8 @@ export function createBlankDay(date: string): DayData {
     weeklyBottlenecks: '',
     weeklyExperiments: '',
     weeklyPriorities: '',
-    weeklyGratitude: ''
+    weeklyGratitude: '',
+    isConfirmed: false
   };
 }
 

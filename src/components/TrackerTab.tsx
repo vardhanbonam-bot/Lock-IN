@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sun, Moon, Coffee, Flame, Heart, Sparkles, Plus, Minus,
   CheckCircle2, AlertCircle, Dumbbell, Calendar, ChevronLeft, 
-  ChevronRight, Smile, EyeOff, BookOpen, Clock, Activity, Zap, Trash2
+  ChevronRight, Smile, EyeOff, BookOpen, Clock, Activity, Zap, Trash2,
+  Lock, Unlock, Settings, Sliders
 } from 'lucide-react';
 
 interface TrackerTabProps {
@@ -17,6 +18,36 @@ interface TrackerTabProps {
 export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTabProps) {
   // Local state for confetti or celebration burst
   const [showCelebration, setShowCelebration] = useState(false);
+
+  // Layout customization preferences (durable inside localStorage)
+  const [enabledSections, setEnabledSections] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('lockedin_tracker_sections');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // Fallback
+      }
+    }
+    return {
+      amGrind: true,
+      middayFlow: true,
+      pmEvening: true,
+      rehabRecovery: true,
+      floorKpis: true,
+      weeklyReview: true,
+    };
+  });
+
+  const [showSettings, setShowSettings] = useState(false);
+
+  const toggleSection = (sectionId: string) => {
+    setEnabledSections(prev => {
+      const updated = { ...prev, [sectionId]: !prev[sectionId] };
+      localStorage.setItem('lockedin_tracker_sections', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   // Sync state and check completion
   const nonNegCompletedCount = 
@@ -158,11 +189,96 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
         </AnimatePresence>
       </div>
 
+      {/* 🛠️ CONTROLS & PERSONALIZATION HEADER BAR */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#111119] border border-brand-border/40 rounded-2xl p-4">
+        <div className="flex items-center gap-2">
+          <Sliders className="w-5 h-5 text-brand-lime" />
+          <span className="text-xs font-black text-white uppercase tracking-widest">Protocol Workspace Settings</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="flex items-center gap-2 px-4 py-2 bg-brand-purple/10 hover:bg-brand-purple/20 border border-brand-purple/40 text-brand-purple hover:text-brand-lime font-mono text-xs font-black uppercase rounded-xl tracking-wider transition-all cursor-pointer"
+          >
+            <Settings className={`w-4 h-4 ${showSettings ? "animate-spin" : ""}`} />
+            {showSettings ? "Close Personalization" : "Personalize Workspace Grid"}
+          </button>
+        </div>
+      </div>
+
+      {/* ⚙️ PERSONALIZATION PANEL */}
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-[#14141F] border border-brand-purple/40 rounded-3xl p-6 space-y-4 shadow-xl">
+              <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-5 h-5 text-brand-lime" />
+                  <h4 className="text-sm font-black uppercase text-white tracking-widest">
+                    PERSONALIZE DAILY WORKSPACE GRID
+                  </h4>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400">
+                Toggle sections on/off to simplify your dashboard. Only track the routines that matter to your daily peak performance.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
+                {[
+                  { id: 'amGrind', label: '🌅 AM Grind Routine' },
+                  { id: 'middayFlow', label: '⚡ Midday Flow' },
+                  { id: 'pmEvening', label: '🌙 PM & Evening Closeout' },
+                  { id: 'rehabRecovery', label: '⚙️ Rehab Physiotherapy' },
+                  { id: 'floorKpis', label: '📊 KPIs & Checklists' },
+                  { id: 'weeklyReview', label: '📆 Weekly Review' },
+                ].map(section => (
+                  <button
+                    key={section.id}
+                    onClick={() => toggleSection(section.id)}
+                    className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      enabledSections[section.id]
+                        ? 'bg-brand-purple/10 border-brand-purple text-white'
+                        : 'bg-black/30 border-white/5 text-gray-500'
+                    }`}
+                  >
+                    <span className="text-xs font-bold">{section.label}</span>
+                    <span className={`text-[10px] font-mono font-black ${
+                      enabledSections[section.id] ? 'text-brand-lime' : 'text-gray-600'
+                    }`}>
+                      {enabledSections[section.id] ? 'ON' : 'OFF'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 🔒 PROTOCOL COMMITTED TOP ALERT */}
+      {dayData.isConfirmed && (
+        <div className="bg-brand-lime/10 border border-brand-lime text-brand-lime px-6 py-4 rounded-3xl flex flex-col sm:flex-row gap-3 items-center justify-between shadow-lg">
+          <div className="flex items-center gap-3 text-center sm:text-left">
+            <div className="w-8 h-8 rounded-full bg-brand-lime text-black flex items-center justify-center font-black">🔒</div>
+            <div>
+              <h4 className="text-sm font-black uppercase tracking-wider">TODAY'S PROTOCOL COMMITTED & LOCKED</h4>
+              <p className="text-xs text-gray-300">Your metrics are saved and frozen. To make changes, click the unlock button at the bottom.</p>
+            </div>
+          </div>
+          <span className="text-[10px] font-mono bg-brand-lime text-black px-2 py-1 rounded font-black uppercase">LIVE SYNCED</span>
+        </div>
+      )}
+
       {/* 🚀 BENTO GRID OF CARDS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 lg:grid-cols-2 gap-6 ${dayData.isConfirmed ? "opacity-70 pointer-events-none" : ""}`}>
 
         {/* CARD 1: 🌅 AM GRIND */}
-        <div id="am-grind-card" className="bg-brand-card border border-brand-border/60 rounded-3xl p-6 space-y-5 shadow-lg">
+        {enabledSections.amGrind && (
+          <div id="am-grind-card" className="bg-brand-card border border-brand-border/60 rounded-3xl p-6 space-y-5 shadow-lg relative">
           <div className="flex items-center gap-2 border-b border-brand-border/40 pb-3">
             <Sun className="w-6 h-6 text-yellow-400" />
             <h3 className="text-xl font-black italic uppercase text-brand-lime tracking-wide">AM GRIND ROUTINE</h3>
@@ -394,9 +510,11 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
             </div>
           </div>
         </div>
+        )}
 
         {/* CARD 2: ☀️ MIDDAY FLOW */}
-        <div id="midday-flow-card" className="bg-brand-card border border-brand-border/60 rounded-3xl p-6 space-y-5 flex flex-col justify-between shadow-lg">
+        {enabledSections.middayFlow && (
+          <div id="midday-flow-card" className="bg-brand-card border border-brand-border/60 rounded-3xl p-6 space-y-5 flex flex-col justify-between shadow-lg">
           <div className="space-y-5">
             <div className="flex items-center gap-2 border-b border-brand-border/40 pb-3">
               <Activity className="w-6 h-6 text-brand-purple" />
@@ -538,9 +656,11 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
             <span className="text-xs font-mono text-gray-500 uppercase">⚡ FLOW RATIO SECURED: {(totalDeepWorkHours / 8 * 100).toFixed(0)}% OF TOTAL WORK POTENTIAL</span>
           </div>
         </div>
+        )}
 
         {/* CARD 3: 🌇 PM / EVENING GRIND */}
-        <div id="pm-grind-card" className="bg-brand-card border border-brand-border/60 rounded-3xl p-6 space-y-5 shadow-lg">
+        {enabledSections.pmEvening && (
+          <div id="pm-grind-card" className="bg-brand-card border border-brand-border/60 rounded-3xl p-6 space-y-5 shadow-lg">
           <div className="flex items-center gap-2 border-b border-brand-border/40 pb-3">
             <Moon className="w-6 h-6 text-brand-purple" />
             <h3 className="text-xl font-black italic uppercase text-brand-purple tracking-wide">PM & EVENING CLOSEOUT</h3>
@@ -678,13 +798,29 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
             />
           </div>
         </div>
+        )}
 
         {/* CARD 4: ⚙️ REHAB RECOVERY */}
-        <div id="rehab-recovery-card" className="bg-brand-card border border-brand-border/60 rounded-3xl p-6 space-y-5 flex flex-col justify-between shadow-lg">
+        {enabledSections.rehabRecovery && (
+          <div id="rehab-recovery-card" className="bg-brand-card border border-brand-border/60 rounded-3xl p-6 space-y-5 flex flex-col justify-between shadow-lg">
           <div className="space-y-5">
             <div className="flex items-center gap-2 border-b border-brand-border/40 pb-3">
               <Dumbbell className="w-6 h-6 text-brand-lime" />
               <h3 className="text-xl font-black italic uppercase text-brand-lime tracking-wide">REHAB PHYSIOTHERAPY ROUTINE</h3>
+            </div>
+
+            {/* 📝 Daily Focus Input */}
+            <div className="bg-black/30 border border-white/5 rounded-2xl p-4 space-y-2">
+              <label className="block text-[10px] font-mono uppercase tracking-widest text-brand-lime font-black">
+                🎯 Day-to-Day Rehab Focus & Strategy
+              </label>
+              <textarea 
+                rows={2}
+                placeholder="Type your specific focus for today (e.g. Quad strengthening, hamstring load management, shoulder mobility, etc.)..."
+                value={dayData.rehabFocusText || ''}
+                onChange={e => onChange({ rehabFocusText: e.target.value })}
+                className="w-full bg-brand-bg border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-brand-lime focus:ring-1 focus:ring-brand-lime placeholder:text-gray-600"
+              />
             </div>
 
             <p className="text-xs text-gray-400 leading-relaxed">
@@ -700,24 +836,89 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
                 </span>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-48 overflow-y-auto">
                 {dayData.rehab1.exercises.map((exercise, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <button 
-                      onClick={() => updateRehab1Exercise(index, !exercise.done)}
-                      className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
-                        exercise.done 
-                          ? 'bg-brand-lime border-brand-lime text-black' 
-                          : 'border-white/10 hover:border-white/20'
-                      }`}
+                  <div key={index} className="flex items-center justify-between gap-3 group bg-black/10 hover:bg-black/25 p-1.5 rounded-lg border border-transparent hover:border-white/5 transition-all">
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={() => updateRehab1Exercise(index, !exercise.done)}
+                        className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+                          exercise.done 
+                            ? 'bg-brand-lime border-brand-lime text-black' 
+                            : 'border-white/10 hover:border-white/20'
+                        }`}
+                      >
+                        {exercise.done && <CheckCircle2 className="w-3.5 h-3.5" />}
+                      </button>
+                      <span className={`text-xs ${exercise.done ? 'text-gray-400 line-through' : 'text-white'}`}>
+                        {exercise.name}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const updatedExercises = dayData.rehab1.exercises.filter((_, i) => i !== index);
+                        const rehab1Done = updatedExercises.every(ex => ex.done);
+                        const rehab2Done = dayData.rehab2.exercises.every(ex => ex.done);
+                        onChange({
+                          rehab1: { ...dayData.rehab1, exercises: updatedExercises },
+                          nonNegRehab: (updatedExercises.length > 0 || dayData.rehab2.exercises.length > 0) ? (rehab1Done && rehab2Done) : false
+                        });
+                      }}
+                      className="text-gray-500 hover:text-brand-coral transition-all p-1 rounded hover:bg-white/5 cursor-pointer"
+                      title="Delete Exercise"
                     >
-                      {exercise.done && <CheckCircle2 className="w-3.5 h-3.5" />}
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                    <span className={`text-sm ${exercise.done ? 'text-gray-400 line-through' : 'text-white'}`}>
-                      {exercise.name}
-                    </span>
                   </div>
                 ))}
+                {dayData.rehab1.exercises.length === 0 && (
+                  <div className="text-[10px] font-mono text-gray-500 italic py-1">No custom exercises logged for AM. Add one below!</div>
+                )}
+              </div>
+
+              {/* Add Custom AM Exercise Form */}
+              <div className="flex gap-2 pt-1 border-t border-white/5">
+                <input
+                  type="text"
+                  id={`new-am-exercise-${dayData.date}`}
+                  placeholder="New AM exercise..."
+                  className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-brand-lime"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const val = (e.currentTarget as HTMLInputElement).value.trim();
+                      if (val) {
+                        const updatedExercises = [...dayData.rehab1.exercises, { name: val, done: false }];
+                        const rehab1Done = updatedExercises.every(ex => ex.done);
+                        const rehab2Done = dayData.rehab2.exercises.every(ex => ex.done);
+                        onChange({
+                          rehab1: { ...dayData.rehab1, exercises: updatedExercises },
+                          nonNegRehab: rehab1Done && rehab2Done
+                        });
+                        (e.currentTarget as HTMLInputElement).value = '';
+                      }
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    const inputEl = document.getElementById(`new-am-exercise-${dayData.date}`) as HTMLInputElement;
+                    const val = inputEl?.value.trim();
+                    if (val) {
+                      const updatedExercises = [...dayData.rehab1.exercises, { name: val, done: false }];
+                      const rehab1Done = updatedExercises.every(ex => ex.done);
+                      const rehab2Done = dayData.rehab2.exercises.every(ex => ex.done);
+                      onChange({
+                        rehab1: { ...dayData.rehab1, exercises: updatedExercises },
+                        nonNegRehab: rehab1Done && rehab2Done
+                      });
+                      inputEl.value = '';
+                    }
+                  }}
+                  className="px-2.5 py-1 bg-brand-lime/10 border border-brand-lime/30 text-brand-lime rounded-lg hover:bg-brand-lime hover:text-black font-mono text-xs font-bold transition-all cursor-pointer"
+                >
+                  + Add
+                </button>
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
@@ -751,24 +952,89 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
                 </span>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-48 overflow-y-auto">
                 {dayData.rehab2.exercises.map((exercise, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <button 
-                      onClick={() => updateRehab2Exercise(index, !exercise.done)}
-                      className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
-                        exercise.done 
-                          ? 'bg-brand-purple border-brand-purple text-white' 
-                          : 'border-white/10 hover:border-white/20'
-                      }`}
+                  <div key={index} className="flex items-center justify-between gap-3 group bg-black/10 hover:bg-black/25 p-1.5 rounded-lg border border-transparent hover:border-white/5 transition-all">
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={() => updateRehab2Exercise(index, !exercise.done)}
+                        className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+                          exercise.done 
+                            ? 'bg-brand-purple border-brand-purple text-white' 
+                            : 'border-white/10 hover:border-white/20'
+                        }`}
+                      >
+                        {exercise.done && <CheckCircle2 className="w-3.5 h-3.5" />}
+                      </button>
+                      <span className={`text-xs ${exercise.done ? 'text-gray-400 line-through' : 'text-white'}`}>
+                        {exercise.name}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const updatedExercises = dayData.rehab2.exercises.filter((_, i) => i !== index);
+                        const rehab1Done = dayData.rehab1.exercises.every(ex => ex.done);
+                        const rehab2Done = updatedExercises.every(ex => ex.done);
+                        onChange({
+                          rehab2: { ...dayData.rehab2, exercises: updatedExercises },
+                          nonNegRehab: (dayData.rehab1.exercises.length > 0 || updatedExercises.length > 0) ? (rehab1Done && rehab2Done) : false
+                        });
+                      }}
+                      className="text-gray-500 hover:text-brand-coral transition-all p-1 rounded hover:bg-white/5 cursor-pointer"
+                      title="Delete Exercise"
                     >
-                      {exercise.done && <CheckCircle2 className="w-3.5 h-3.5" />}
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                    <span className={`text-sm ${exercise.done ? 'text-gray-400 line-through' : 'text-white'}`}>
-                      {exercise.name}
-                    </span>
                   </div>
                 ))}
+                {dayData.rehab2.exercises.length === 0 && (
+                  <div className="text-[10px] font-mono text-gray-500 italic py-1">No custom exercises logged for PM. Add one below!</div>
+                )}
+              </div>
+
+              {/* Add Custom PM Exercise Form */}
+              <div className="flex gap-2 pt-1 border-t border-white/5">
+                <input
+                  type="text"
+                  id={`new-pm-exercise-${dayData.date}`}
+                  placeholder="New PM exercise..."
+                  className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-brand-purple"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const val = (e.currentTarget as HTMLInputElement).value.trim();
+                      if (val) {
+                        const updatedExercises = [...dayData.rehab2.exercises, { name: val, done: false }];
+                        const rehab1Done = dayData.rehab1.exercises.every(ex => ex.done);
+                        const rehab2Done = updatedExercises.every(ex => ex.done);
+                        onChange({
+                          rehab2: { ...dayData.rehab2, exercises: updatedExercises },
+                          nonNegRehab: rehab1Done && rehab2Done
+                        });
+                        (e.currentTarget as HTMLInputElement).value = '';
+                      }
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    const inputEl = document.getElementById(`new-pm-exercise-${dayData.date}`) as HTMLInputElement;
+                    const val = inputEl?.value.trim();
+                    if (val) {
+                      const updatedExercises = [...dayData.rehab2.exercises, { name: val, done: false }];
+                      const rehab1Done = dayData.rehab1.exercises.every(ex => ex.done);
+                      const rehab2Done = updatedExercises.every(ex => ex.done);
+                      onChange({
+                        rehab2: { ...dayData.rehab2, exercises: updatedExercises },
+                        nonNegRehab: rehab1Done && rehab2Done
+                      });
+                      inputEl.value = '';
+                    }
+                  }}
+                  className="px-2.5 py-1 bg-brand-purple/10 border border-brand-purple/30 text-brand-purple rounded-lg hover:bg-brand-purple hover:text-white font-mono text-xs font-bold transition-all cursor-pointer"
+                >
+                  + Add
+                </button>
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
@@ -805,9 +1071,11 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
             </div>
           </div>
         </div>
+        )}
 
         {/* CARD 5: 📊 CORE KPIs & CHECKS */}
-        <div id="kpis-checks-card" className="bg-brand-card border border-brand-border/60 rounded-3xl p-6 space-y-6 lg:col-span-2 shadow-lg">
+        {enabledSections.floorKpis && (
+          <div id="kpis-checks-card" className="bg-brand-card border border-brand-border/60 rounded-3xl p-6 space-y-6 lg:col-span-2 shadow-lg">
           <div className="flex items-center justify-between border-b border-brand-border/40 pb-3">
             <div className="flex items-center gap-2">
               <Zap className="w-6 h-6 text-brand-lime" />
@@ -1066,9 +1334,10 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
             </div>
           </div>
         </div>
+        )}
 
         {/* CARD 6: 📆 WEEKLY REVIEW (Sunday only) */}
-        {isSunday() ? (
+        {enabledSections.weeklyReview && (isSunday() ? (
           <div id="weekly-sunday-review-card" className="bg-gradient-to-br from-brand-card to-brand-purple/10 border border-brand-purple/40 rounded-2xl p-6 space-y-5 lg:col-span-2">
             <div className="flex items-center justify-between border-b border-brand-purple/20 pb-3">
               <div className="flex items-center gap-2">
@@ -1166,9 +1435,61 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
               📆 WAR-ROOM WEEKLY REVIEW LOCKED (SUNDAYS ONLY). KEEP THE DAILY SPRINT GOING!
             </span>
           </div>
-        )}
+        ))}
 
       </div>
+
+      {/* 🔒 PROTOCOL CONFIRMATION & LOCK IN ACTION BAR */}
+      <div className="bg-[#111119] border border-brand-border/60 rounded-3xl p-6 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6 mt-8">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-brand-lime/10 border border-brand-lime/30 rounded-2xl">
+            {dayData.isConfirmed ? (
+              <Lock className="w-8 h-8 text-brand-lime animate-bounce" />
+            ) : (
+              <Unlock className="w-8 h-8 text-brand-purple animate-pulse" />
+            )}
+          </div>
+          <div className="text-left">
+            <h3 className="text-lg font-black italic uppercase text-white tracking-wide flex items-center gap-2">
+              {dayData.isConfirmed ? "PROTOCOL LOCKED & SECURED" : "PROTOCOL LOG READY"}
+              <span className="text-[10px] font-mono bg-brand-lime/15 border border-brand-lime/30 text-brand-lime px-2 py-0.5 rounded uppercase">
+                {dayData.isConfirmed ? "COMMITTED" : "DRAFT"}
+              </span>
+            </h3>
+            <p className="text-xs text-gray-400 mt-1 max-w-md">
+              {dayData.isConfirmed 
+                ? "Today's daily protocol has been locked and committed to the cloud. You are executing at peak performance." 
+                : "Verify your metrics and secure the floor. Click below to lock in today's protocol and secure your streak!"}
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex gap-4 w-full sm:w-auto justify-end">
+          {dayData.isConfirmed ? (
+            <button
+              onClick={() => {
+                onChange({ isConfirmed: false });
+              }}
+              className="w-full sm:w-auto px-6 py-3 bg-brand-bg hover:bg-brand-purple/10 border border-brand-purple/40 text-brand-purple hover:text-brand-lime font-mono text-xs font-black uppercase rounded-2xl tracking-widest transition-all cursor-pointer"
+            >
+              🔓 UNLOCK TO RE-EDIT LOG
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                onChange({ isConfirmed: true });
+                // Trigger celebration
+                setShowCelebration(true);
+                setTimeout(() => setShowCelebration(false), 4000);
+              }}
+              className="w-full sm:w-auto px-8 py-4 bg-brand-lime hover:bg-brand-lime/90 text-black font-mono text-sm font-black uppercase rounded-2xl tracking-widest shadow-lg shadow-brand-lime/20 flex items-center justify-center gap-2 transform active:scale-95 transition-all cursor-pointer"
+            >
+              🔒 LOCK IN PROTOCOL NOW
+            </button>
+          )}
+        </div>
+      </div>
+
     </div>
   );
 }

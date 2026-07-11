@@ -30,13 +30,31 @@ export default function ExpensesTab({
   budgets,
   onUpdateBudget
 }: ExpensesTabProps) {
+  const getLocalDateString = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const r = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${r}`;
+  };
+
+  const getLocalMonthString = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  };
+
+  const dynamicTodayStr = getLocalDateString();
+  const dynamicMonthStr = getLocalMonthString();
+
   // Local active states
-  const [selectedMonth, setSelectedMonth] = useState<string>('2026-07'); // Default to Jul 2026
+  const [selectedMonth, setSelectedMonth] = useState<string>(dynamicMonthStr);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
 
   // Form State
-  const [formDate, setFormDate] = useState('2026-07-10');
+  const [formDate, setFormDate] = useState(dynamicTodayStr);
   const [formAmount, setFormAmount] = useState('');
   const [formCategory, setFormCategory] = useState(categories[0] || 'Food');
   const [formPaymentMethod, setFormPaymentMethod] = useState('UPI');
@@ -55,16 +73,16 @@ export default function ExpensesTab({
   // Helper lists
   const paymentMethods = ['UPI', 'Card', 'Cash', 'NetBanking'];
 
-  // Current Date contexts (relative to system date 2026-07-10)
-  const systemDateStr = '2026-07-10';
-  const systemYear = 2026;
-  const systemMonth = 7; // July (1-indexed)
-  const systemDay = 10;
+  // Current Date contexts (relative to dynamic system date)
+  const systemDate = new Date();
+  const systemYear = systemDate.getFullYear();
+  const systemMonth = systemDate.getMonth() + 1; // 1-indexed
+  const systemDay = systemDate.getDate();
 
   // Handle open Form for Add
   const handleOpenAddForm = () => {
     setEditingExpenseId(null);
-    setFormDate('2026-07-10');
+    setFormDate(dynamicTodayStr);
     setFormAmount('');
     setFormCategory(categories[0] || 'Food');
     setFormPaymentMethod('UPI');
@@ -244,12 +262,23 @@ export default function ExpensesTab({
             onChange={e => setSelectedMonth(e.target.value)}
             className="bg-black border border-brand-border/60 rounded-xl px-3 py-1.5 text-white font-mono text-sm focus:outline-none focus:border-brand-purple cursor-pointer"
           >
-            <option value="2026-07">July 2026 (Today)</option>
-            <option value="2026-06">June 2026</option>
-            <option value="2026-05">May 2026</option>
-            <option value="2026-04">April 2026</option>
-            <option value="2026-03">March 2026</option>
-            <option value="2026-02">February 2026</option>
+            {(() => {
+              const list = [];
+              const d = new Date();
+              for (let i = 0; i < 6; i++) {
+                const year = d.getFullYear();
+                const month = d.getMonth() + 1;
+                const monthStr = String(month).padStart(2, '0');
+                const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                list.push(
+                  <option key={`${year}-${monthStr}`} value={`${year}-${monthStr}`}>
+                    {label}{i === 0 ? ' (Today)' : ''}
+                  </option>
+                );
+                d.setMonth(d.getMonth() - 1);
+              }
+              return list;
+            })()}
           </select>
         </div>
 

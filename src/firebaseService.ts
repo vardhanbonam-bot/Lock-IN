@@ -12,13 +12,26 @@ import {
   INITIAL_DAYS, 
   INITIAL_EXPENSES, 
   DEFAULT_BUDGETS, 
-  DEFAULT_EXPENSE_CATEGORIES 
+  DEFAULT_EXPENSE_CATEGORIES,
+  createBlankDay
 } from "./data";
 
-const DAYS_COLL = "days";
-const EXPENSES_COLL = "expenses";
-const BUDGETS_COLL = "budgets";
-const CATEGORIES_COLL = "categories";
+// Partition database collections by active profile ID
+let activeUserId = "sri_rama_satya";
+
+export function setFirebaseUserScope(userId: string) {
+  activeUserId = userId;
+  console.log(`[Firestore] Switched scope to user: ${userId}`);
+}
+
+export function getFirebaseUserScope(): string {
+  return activeUserId;
+}
+
+const getDaysColl = () => collection(db, "users", activeUserId, "days");
+const getExpensesColl = () => collection(db, "users", activeUserId, "expenses");
+const getBudgetsColl = () => collection(db, "users", activeUserId, "budgets");
+const getCategoriesColl = () => collection(db, "users", activeUserId, "categories");
 
 /**
  * Seeds the Firestore database with initial mock/template data if collections are empty.
@@ -26,54 +39,103 @@ const CATEGORIES_COLL = "categories";
 export async function seedDatabaseIfEmpty(): Promise<void> {
   try {
     // 1. Seed days
-    const daysSnap = await getDocs(collection(db, DAYS_COLL));
+    const daysSnap = await getDocs(getDaysColl());
     if (daysSnap.empty) {
       const batch = writeBatch(db);
-      Object.entries(INITIAL_DAYS).forEach(([date, data]) => {
-        const docRef = doc(db, DAYS_COLL, date);
-        batch.set(docRef, data);
-      });
+      if (activeUserId === "sri_rama_satya") {
+        Object.entries(INITIAL_DAYS).forEach(([date, data]) => {
+          const docRef = doc(db, "users", activeUserId, "days", date);
+          batch.set(docRef, data);
+        });
+      } else {
+        // Seed some elegant demo days for Indu
+        const todayStr = new Date().toISOString().split('T')[0];
+        
+        // Yesterday (Jul 10, 2026 or real relative yesterday)
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+        const demoDayYesterday: DayData = {
+          ...createBlankDay(yesterdayStr),
+          wakeTime: '07:00 AM',
+          induExercisesDone: true,
+          induExercisesList: 'Yoga stretch, 30 Squats',
+          induWater10Glasses: true,
+          induPreparedForClass: true,
+          induReadNewspaper: true,
+          induLearnedNewThing: true,
+          induNewThingText: 'Read about the History of Typography',
+          induWalked5Km: true,
+          induDeepSleepHours: 3.5,
+          nonNegRehab: true,
+          nonNegMeditation: true,
+          nonNegWaterNutrition: true,
+          isConfirmed: true
+        };
+
+        const demoDayToday: DayData = {
+          ...createBlankDay(todayStr),
+          wakeTime: '06:45 AM',
+          induExercisesDone: true,
+          induExercisesList: 'Core Workout & Stretching',
+          induWater10Glasses: false,
+          induPreparedForClass: true,
+          induReadNewspaper: true,
+          induLearnedNewThing: true,
+          induNewThingText: 'Learned Tailwind dynamic theme attributes',
+          induWalked5Km: false,
+          induDeepSleepHours: 4.2,
+          nonNegRehab: true,
+          nonNegMeditation: false,
+          nonNegWaterNutrition: false,
+          isConfirmed: false
+        };
+
+        batch.set(doc(db, "users", activeUserId, "days", yesterdayStr), demoDayYesterday);
+        batch.set(doc(db, "users", activeUserId, "days", todayStr), demoDayToday);
+      }
       await batch.commit();
-      console.log("Seeded default tracker days to Firestore.");
+      console.log(`Seeded default tracker days for user ${activeUserId} to Firestore.`);
     }
 
     // 2. Seed expenses
-    const expensesSnap = await getDocs(collection(db, EXPENSES_COLL));
+    const expensesSnap = await getDocs(getExpensesColl());
     if (expensesSnap.empty) {
       const batch = writeBatch(db);
       INITIAL_EXPENSES.forEach((exp) => {
-        const docRef = doc(db, EXPENSES_COLL, exp.id);
+        const docRef = doc(db, "users", activeUserId, "expenses", exp.id);
         batch.set(docRef, exp);
       });
       await batch.commit();
-      console.log("Seeded default expense transactions to Firestore.");
+      console.log(`Seeded default expense transactions for user ${activeUserId} to Firestore.`);
     }
 
     // 3. Seed categories
-    const categoriesSnap = await getDocs(collection(db, CATEGORIES_COLL));
+    const categoriesSnap = await getDocs(getCategoriesColl());
     if (categoriesSnap.empty) {
       const batch = writeBatch(db);
       DEFAULT_EXPENSE_CATEGORIES.forEach((cat) => {
-        const docRef = doc(db, CATEGORIES_COLL, cat);
+        const docRef = doc(db, "users", activeUserId, "categories", cat);
         batch.set(docRef, { name: cat });
       });
       await batch.commit();
-      console.log("Seeded default categories to Firestore.");
+      console.log(`Seeded default categories for user ${activeUserId} to Firestore.`);
     }
 
     // 4. Seed budgets
-    const budgetsSnap = await getDocs(collection(db, BUDGETS_COLL));
+    const budgetsSnap = await getDocs(getBudgetsColl());
     if (budgetsSnap.empty) {
       const batch = writeBatch(db);
       DEFAULT_BUDGETS.forEach((b) => {
-        const docRef = doc(db, BUDGETS_COLL, b.category);
+        const docRef = doc(db, "users", activeUserId, "budgets", b.category);
         batch.set(docRef, b);
       });
       await batch.commit();
-      console.log("Seeded default budgets to Firestore.");
+      console.log(`Seeded default budgets for user ${activeUserId} to Firestore.`);
     }
   } catch (error) {
-    console.error("Error during database seeding:", error);
+    console.error(`Error during database seeding for user ${activeUserId}:`, error);
   }
 }
 
@@ -81,7 +143,7 @@ export async function seedDatabaseIfEmpty(): Promise<void> {
  * Fetch all tracker logs
  */
 export async function getDaysFromFirebase(): Promise<Record<string, DayData>> {
-  const querySnapshot = await getDocs(collection(db, DAYS_COLL));
+  const querySnapshot = await getDocs(getDaysColl());
   const daysMap: Record<string, DayData> = {};
   querySnapshot.forEach((doc) => {
     daysMap[doc.id] = doc.data() as DayData;
@@ -93,7 +155,7 @@ export async function getDaysFromFirebase(): Promise<Record<string, DayData>> {
  * Save / update a single tracker log day
  */
 export async function saveDayToFirebase(date: string, data: DayData): Promise<void> {
-  const docRef = doc(db, DAYS_COLL, date);
+  const docRef = doc(db, "users", activeUserId, "days", date);
   await setDoc(docRef, data, { merge: true });
 }
 
@@ -101,7 +163,7 @@ export async function saveDayToFirebase(date: string, data: DayData): Promise<vo
  * Fetch all expenses sorted by date descending
  */
 export async function getExpensesFromFirebase(): Promise<Expense[]> {
-  const querySnapshot = await getDocs(collection(db, EXPENSES_COLL));
+  const querySnapshot = await getDocs(getExpensesColl());
   const list: Expense[] = [];
   querySnapshot.forEach((doc) => {
     list.push(doc.data() as Expense);
@@ -113,7 +175,7 @@ export async function getExpensesFromFirebase(): Promise<Expense[]> {
  * Save/update an expense
  */
 export async function saveExpenseToFirebase(expense: Expense): Promise<void> {
-  const docRef = doc(db, EXPENSES_COLL, expense.id);
+  const docRef = doc(db, "users", activeUserId, "expenses", expense.id);
   await setDoc(docRef, expense);
 }
 
@@ -121,7 +183,7 @@ export async function saveExpenseToFirebase(expense: Expense): Promise<void> {
  * Delete an expense
  */
 export async function deleteExpenseFromFirebase(id: string): Promise<void> {
-  const docRef = doc(db, EXPENSES_COLL, id);
+  const docRef = doc(db, "users", activeUserId, "expenses", id);
   await deleteDoc(docRef);
 }
 
@@ -129,7 +191,7 @@ export async function deleteExpenseFromFirebase(id: string): Promise<void> {
  * Fetch categories
  */
 export async function getCategoriesFromFirebase(): Promise<string[]> {
-  const querySnapshot = await getDocs(collection(db, CATEGORIES_COLL));
+  const querySnapshot = await getDocs(getCategoriesColl());
   const list: string[] = [];
   querySnapshot.forEach((doc) => {
     list.push(doc.id);
@@ -141,7 +203,7 @@ export async function getCategoriesFromFirebase(): Promise<string[]> {
  * Add custom category
  */
 export async function saveCategoryToFirebase(categoryName: string): Promise<void> {
-  const docRef = doc(db, CATEGORIES_COLL, categoryName);
+  const docRef = doc(db, "users", activeUserId, "categories", categoryName);
   await setDoc(docRef, { name: categoryName });
 }
 
@@ -149,7 +211,7 @@ export async function saveCategoryToFirebase(categoryName: string): Promise<void
  * Delete custom category
  */
 export async function deleteCategoryFromFirebase(categoryName: string): Promise<void> {
-  const docRef = doc(db, CATEGORIES_COLL, categoryName);
+  const docRef = doc(db, "users", activeUserId, "categories", categoryName);
   await deleteDoc(docRef);
 }
 
@@ -157,7 +219,7 @@ export async function deleteCategoryFromFirebase(categoryName: string): Promise<
  * Fetch budgets
  */
 export async function getBudgetsFromFirebase(): Promise<CategoryBudget[]> {
-  const querySnapshot = await getDocs(collection(db, BUDGETS_COLL));
+  const querySnapshot = await getDocs(getBudgetsColl());
   const list: CategoryBudget[] = [];
   querySnapshot.forEach((doc) => {
     list.push(doc.data() as CategoryBudget);
@@ -169,7 +231,7 @@ export async function getBudgetsFromFirebase(): Promise<CategoryBudget[]> {
  * Save/update budget limit
  */
 export async function saveBudgetToFirebase(budget: CategoryBudget): Promise<void> {
-  const docRef = doc(db, BUDGETS_COLL, budget.category);
+  const docRef = doc(db, "users", activeUserId, "budgets", budget.category);
   await setDoc(docRef, budget);
 }
 
@@ -177,6 +239,6 @@ export async function saveBudgetToFirebase(budget: CategoryBudget): Promise<void
  * Delete budget
  */
 export async function deleteBudgetFromFirebase(category: string): Promise<void> {
-  const docRef = doc(db, BUDGETS_COLL, category);
+  const docRef = doc(db, "users", activeUserId, "budgets", category);
   await deleteDoc(docRef);
 }

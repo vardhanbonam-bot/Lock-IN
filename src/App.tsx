@@ -19,15 +19,18 @@ import {
   deleteCategoryFromFirebase,
   getBudgetsFromFirebase,
   saveBudgetToFirebase,
-  deleteBudgetFromFirebase
+  deleteBudgetFromFirebase,
+  setFirebaseUserScope
 } from './firebaseService';
 import TrackerTab from './components/TrackerTab';
+import InduTracker from './components/InduTracker';
 import ExpensesTab from './components/ExpensesTab';
 import HistoryTab from './components/HistoryTab';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Flame, Calendar, CreditCard, ClipboardList, TrendingUp, Zap, 
-  ChevronLeft, ChevronRight, RefreshCw, Trophy, Target
+  ChevronLeft, ChevronRight, RefreshCw, Trophy, Target,
+  Lock, Unlock, KeyRound, Users, LogOut
 } from 'lucide-react';
 
 export default function App() {
@@ -39,18 +42,43 @@ export default function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const [syncing, setSyncing] = useState<boolean>(false);
 
+  // Authentication & profile state
+  const [currentUser, setCurrentUser] = useState<'sri_rama_satya' | 'indu' | null>(() => {
+    const cached = localStorage.getItem('lockedin_user');
+    if (cached === 'sri_rama_satya' || cached === 'indu') {
+      return cached;
+    }
+    return null;
+  });
+
+  const [pinInput, setPinInput] = useState('');
+  const [selectedProfileId, setSelectedProfileId] = useState<'sri_rama_satya' | 'indu'>('sri_rama_satya');
+  const [pinError, setPinError] = useState('');
+
   // Active navigation states
-  const [selectedDate, setSelectedDate] = useState<string>('2026-07-10'); // Default to Today
+  const getLocalDateString = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const r = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${r}`;
+  };
+  const TODAY_STR = getLocalDateString();
+
+  const [selectedDate, setSelectedDate] = useState<string>(TODAY_STR);
   const [activeTab, setActiveTab] = useState<'tracker' | 'expenses' | 'history'>('tracker');
 
-  // Hardcoded current date representation
-  const TODAY_STR = '2026-07-10';
-
-  // Mount logic: Seed default dataset if Firestore is blank, then load all collections
+  // Load collections when identity is set
   useEffect(() => {
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
+
     async function loadData() {
       try {
         setLoading(true);
+        setFirebaseUserScope(currentUser);
         await seedDatabaseIfEmpty();
 
         const [loadedDays, loadedExpenses, loadedCategories, loadedBudgets] = await Promise.all([
@@ -75,7 +103,7 @@ export default function App() {
       }
     }
     loadData();
-  }, []);
+  }, [currentUser]);
 
   // Get current active day data (or create new blank if empty)
   const activeDayData = days[selectedDate] || createBlankDay(selectedDate);
@@ -111,6 +139,19 @@ export default function App() {
     const isCompleted = (dateStr: string) => {
       const day = daysRecord[dateStr];
       if (!day) return false;
+      
+      if (currentUser === 'indu') {
+        return !!(
+          day.wakeTime &&
+          day.induExercisesDone &&
+          day.induWater10Glasses &&
+          day.induPreparedForClass &&
+          day.induReadNewspaper &&
+          day.induWalked5Km &&
+          (day.induDeepSleepHours && day.induDeepSleepHours > 0)
+        );
+      }
+      
       return day.nonNegRehab && day.nonNegMeditation && day.nonNegWaterNutrition;
     };
 
@@ -293,6 +334,150 @@ export default function App() {
     );
   }
 
+  // Identity Verification Lock Screen Gate
+  if (!currentUser) {
+    const handleLoginSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      setPinError('');
+      if (selectedProfileId === 'sri_rama_satya') {
+        if (pinInput === '2004') {
+          localStorage.setItem('lockedin_user', 'sri_rama_satya');
+          setCurrentUser('sri_rama_satya');
+          setPinInput('');
+        } else {
+          setPinError('INVALID SECURE PASSCODE. DECRYPT FAIL.');
+        }
+      } else if (selectedProfileId === 'indu') {
+        if (pinInput === '2007') {
+          localStorage.setItem('lockedin_user', 'indu');
+          setCurrentUser('indu');
+          setPinInput('');
+        } else {
+          setPinError('INVALID SECURE PASSCODE. DECRYPT FAIL.');
+        }
+      }
+    };
+
+    return (
+      <div className="min-h-screen bg-[#0A0A0F] text-white flex flex-col items-center justify-center font-sans p-4 relative overflow-hidden select-none">
+        {/* Cyber Grid Pattern & Ambient Glows */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293708_1px,transparent_1px),linear-gradient(to_bottom,#1f293708_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-brand-purple/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-brand-lime/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="w-full max-w-md relative z-10 space-y-8">
+          <div className="text-center">
+            <img 
+              src="/logo.svg" 
+              alt="LOCKED IN Logo" 
+              className="w-16 h-16 mx-auto drop-shadow-[0_0_20px_rgba(139,92,246,0.35)] mb-4 animate-pulse select-none" 
+            />
+            <h1 className="text-4xl md:text-5xl font-black tracking-tighter leading-none italic uppercase text-brand-lime skew-x-[-10deg]">
+              LOCKED IN
+            </h1>
+            <p className="text-brand-purple font-mono font-black tracking-widest text-[9px] uppercase mt-2">
+              RESTRICTED ELITE LOG PROTOCOL
+            </p>
+          </div>
+
+          <div className="bg-brand-card border border-brand-border/60 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-purple via-brand-lime to-brand-purple" />
+            
+            <div className="mb-6 text-center">
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-gray-400 uppercase tracking-widest">
+                <KeyRound className="w-3.5 h-3.5 text-brand-purple" /> IDENTITY ENFORCEMENT
+              </span>
+              <h2 className="text-lg font-black text-white uppercase mt-1">Select Active Profile</h2>
+            </div>
+
+            {/* Profile Selection Selection Grid */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProfileId('sri_rama_satya');
+                  setPinInput('');
+                  setPinError('');
+                }}
+                className={`p-4 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 ${
+                  selectedProfileId === 'sri_rama_satya'
+                    ? 'bg-brand-purple/10 border-brand-purple text-white shadow-lg'
+                    : 'bg-black/35 border-white/5 text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                <Users className={`w-5 h-5 ${selectedProfileId === 'sri_rama_satya' ? 'text-brand-purple' : 'text-gray-600'}`} />
+                <span className="text-xs font-black uppercase tracking-tight">Sri Rama Satya</span>
+                <span className="text-[9px] font-mono text-gray-500">ID: USER_01</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProfileId('indu');
+                  setPinInput('');
+                  setPinError('');
+                }}
+                className={`p-4 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 ${
+                  selectedProfileId === 'indu'
+                    ? 'bg-brand-purple/10 border-brand-purple text-white shadow-lg'
+                    : 'bg-black/35 border-white/5 text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                <Users className={`w-5 h-5 ${selectedProfileId === 'indu' ? 'text-brand-purple' : 'text-gray-600'}`} />
+                <span className="text-xs font-black uppercase tracking-tight">Indu</span>
+                <span className="text-[9px] font-mono text-gray-500">ID: USER_02</span>
+              </button>
+            </div>
+
+            {/* PIN Form */}
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-[10px] font-mono font-bold text-gray-400 uppercase tracking-widest">
+                  Enter Secure Protocol PIN
+                </label>
+                <input
+                  type="password"
+                  maxLength={4}
+                  pattern="\d*"
+                  inputMode="numeric"
+                  value={pinInput}
+                  onChange={e => {
+                    setPinInput(e.target.value.replace(/\D/g, ''));
+                    setPinError('');
+                  }}
+                  placeholder="••••"
+                  className="w-full bg-black/50 border border-white/10 rounded-xl py-3 text-center text-2xl font-mono text-brand-lime tracking-widest placeholder:text-gray-850 focus:outline-none focus:border-brand-purple"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              {pinError && (
+                <div className="text-[10px] text-brand-coral font-mono text-center font-bold tracking-wider">
+                  ⚠ {pinError}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-4 bg-brand-lime hover:bg-brand-lime/90 text-black font-mono text-xs font-black uppercase rounded-xl tracking-widest shadow-lg shadow-brand-lime/20 cursor-pointer transform active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              >
+                <Lock className="w-4 h-4" />
+                ENTER PROTOCOL VIEW
+              </button>
+            </form>
+          </div>
+
+          <div className="text-center">
+            <p className="text-[10px] font-mono text-gray-650 uppercase tracking-wider">
+              Enforcing extreme high-performance parameters 🔒
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-white flex flex-col justify-between">
       
@@ -339,6 +524,28 @@ export default function App() {
                 <span className="text-4xl lg:text-5xl font-black text-white">{streakCount}</span>
                 <span className="text-brand-lime text-xl lg:text-2xl">🔥</span>
               </div>
+            </div>
+
+            {/* ACTIVE SECURITY IDENTITY DISPLAY */}
+            <div className="bg-[#111119] border border-white/5 rounded-2xl px-3 py-1.5 flex items-center gap-2.5 text-center lg:text-right">
+              <div>
+                <span className="text-[8px] font-mono text-gray-500 uppercase block tracking-wider leading-none">Security Profile</span>
+                <span className="text-xs font-black text-brand-lime uppercase tracking-tight block mt-0.5">
+                  {currentUser === 'sri_rama_satya' ? 'Sri Rama Satya' : 'Indu'}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  localStorage.removeItem('lockedin_user');
+                  setCurrentUser(null);
+                  setPinInput('');
+                  setPinError('');
+                }}
+                className="p-1.5 hover:bg-white/5 rounded-lg text-brand-coral/80 hover:text-brand-coral transition-all cursor-pointer"
+                title="Switch Profile / Logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
 
 
@@ -437,12 +644,21 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.25 }}
+              className="w-full"
             >
-              <TrackerTab 
-                dayData={activeDayData}
-                onChange={handleDayDataChange}
-                streakCount={streakCount}
-              />
+              {currentUser === 'indu' ? (
+                <InduTracker 
+                  dayData={activeDayData}
+                  onChange={handleDayDataChange}
+                  streakCount={streakCount}
+                />
+              ) : (
+                <TrackerTab 
+                  dayData={activeDayData}
+                  onChange={handleDayDataChange}
+                  streakCount={streakCount}
+                />
+              )}
             </motion.div>
           ) : activeTab === 'expenses' ? (
             <motion.div
@@ -474,6 +690,7 @@ export default function App() {
             >
               <HistoryTab 
                 days={days}
+                currentUserId={currentUser || 'sri_rama_satya'}
                 onSelectDate={setSelectedDate}
                 onSwitchTab={setActiveTab}
               />

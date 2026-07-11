@@ -60,35 +60,38 @@
   <circle cx="256" cy="256" r="210" fill="none" stroke="#8B5CF6" stroke-width="2" opacity="0.15" />
   <circle cx="256" cy="256" r="230" fill="none" stroke="#BEF264" stroke-width="1" stroke-dasharray="8, 12" opacity="0.2" />
 
-  <!-- Padlock Shackle (Heavy Arch) -->
-  <path d="M166 230 V160 C166 110.3 206.3 70 256 70 C305.7 70 346 110.3 346 160 V230" 
-        fill="none" 
-        stroke="url(#neonPurple)" 
-        stroke-width="28" 
-        stroke-linecap="round" 
-        filter="url(#neonGlowPurple)" />
+  <!-- Padlock (Scaled down and centered) -->
+  <g transform="translate(38.4, 38.4) scale(0.85)">
+    <!-- Padlock Shackle (Heavy Arch) -->
+    <path d="M166 230 V160 C166 110.3 206.3 70 256 70 C305.7 70 346 110.3 346 160 V230" 
+          fill="none" 
+          stroke="url(#neonPurple)" 
+          stroke-width="28" 
+          stroke-linecap="round" 
+          filter="url(#neonGlowPurple)" />
 
-  <!-- Padlock Shackle Inner Trim -->
-  <path d="M182 230 V160 C182 119.1 215.1 86 256 86 C296.9 86 330 119.1 330 160 V230" 
-        fill="none" 
-        stroke="#ffffff" 
-        stroke-width="4" 
-        stroke-linecap="round" 
-        opacity="0.3" />
+    <!-- Padlock Shackle Inner Trim -->
+    <path d="M182 230 V160 C182 119.1 215.1 86 256 86 C296.9 86 330 119.1 330 160 V230" 
+          fill="none" 
+          stroke="#ffffff" 
+          stroke-width="4" 
+          stroke-linecap="round" 
+          opacity="0.3" />
 
-  <!-- Padlock Body (Solid, sleek hexagon/shield) -->
-  <path d="M110 210 H402 C415 210 426 221 426 234 V390 C426 425 397 454 362 454 H150 C115 454 86 425 86 390 V234 C86 221 97 210 110 210 Z" 
-        fill="#0D0D14" 
-        stroke="url(#neonPurple)" 
-        stroke-width="12" />
+    <!-- Padlock Body (Solid, sleek hexagon/shield) -->
+    <path d="M110 210 H402 C415 210 426 221 426 234 V390 C426 425 397 454 362 454 H150 C115 454 86 425 86 390 V234 C86 221 97 210 110 210 Z" 
+          fill="#0D0D14" 
+          stroke="url(#neonPurple)" 
+          stroke-width="12" />
 
-  <!-- Padlock Inner Accent lines -->
-  <rect x="110" y="234" width="292" height="196" rx="20" fill="none" stroke="#2D1B4E" stroke-width="2" />
+    <!-- Padlock Inner Accent lines -->
+    <rect x="110" y="234" width="292" height="196" rx="20" fill="none" stroke="#2D1B4E" stroke-width="2" />
 
-  <!-- Center Keyhole / Lightning Bolt Core (Active Energy, representing "Locked In") -->
-  <g transform="translate(186, 250) scale(0.9)" filter="url(#neonGlowLime)">
-    <!-- Lightning Bolt -->
-    <polygon points="80,0 10,110 70,110 20,220 130,90 60,90" fill="url(#neonLime)" />
+    <!-- Center Keyhole / Lightning Bolt Core (Active Energy, representing "Locked In") -->
+    <g transform="translate(186, 250) scale(0.9)" filter="url(#neonGlowLime)">
+      <!-- Lightning Bolt -->
+      <polygon points="80,0 10,110 70,110 20,220 130,90 60,90" fill="url(#neonLime)" />
+    </g>
   </g>
 
   <!-- High-energy crosshairs (Corner brackets) -->

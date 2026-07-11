@@ -94,6 +94,18 @@ export function createBlankDay(date: string): DayData {
     bonusDeepStudy: false,
     bonusFocusProtected: false,
     customTasks: [],
+    
+    // Indu tracking defaults
+    induExercisesDone: false,
+    induExercisesList: '',
+    induWater10Glasses: false,
+    induPreparedForClass: false,
+    induReadNewspaper: false,
+    induLearnedNewThing: false,
+    induNewThingText: '',
+    induWalked5Km: false,
+    induDeepSleepHours: 0,
+
     weeklyWins: '',
     weeklyLosses: '',
     weeklyData: '',

@@ -69,6 +69,17 @@ export interface DayData {
   isConfirmed?: boolean;
   customTasks?: { id: string; name: string; done: boolean }[];
 
+  // Indu's specialized tracking fields (User 2)
+  induExercisesDone?: boolean;
+  induExercisesList?: string;
+  induWater10Glasses?: boolean;
+  induPreparedForClass?: boolean;
+  induReadNewspaper?: boolean;
+  induLearnedNewThing?: boolean;
+  induNewThingText?: string;
+  induWalked5Km?: boolean;
+  induDeepSleepHours?: number;
+
   // Weekly (Sunday only)
   weeklyWins: string;
   weeklyLosses: string;

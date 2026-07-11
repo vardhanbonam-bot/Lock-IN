@@ -67,6 +67,7 @@ export interface DayData {
   bonusDeepStudy: boolean;
   bonusFocusProtected: boolean;
   isConfirmed?: boolean;
+  customTasks?: { id: string; name: string; done: boolean }[];
 
   // Weekly (Sunday only)
   weeklyWins: string;

@@ -53,7 +53,7 @@ export default function HistoryTab({ days, onSelectDate, onSwitchTab }: HistoryT
       'Deep Work 2 Task', 'Deep Work 2 Hours', 'Deep Work 2 Focus Score',
       'Daily Pain Score (1-10)', 'Daily Mood Score (1-10)', 'Daily Sleep Hours',
       'Journal Review', 'Dinner Time', 'Dinner What', 'Sleep Time',
-      'Weekly Wins (Sunday Only)', 'Weekly Losses'
+      'Weekly Wins (Sunday Only)', 'Weekly Losses', 'Custom Tasks Total', 'Custom Tasks Done'
     ];
 
     // Map rows
@@ -103,7 +103,9 @@ export default function HistoryTab({ days, onSelectDate, onSwitchTab }: HistoryT
         `"${(day.dinnerWhat || '').replace(/"/g, '""')}"`,
         day.sleepTime || 'N/A',
         `"${(day.weeklyWins || '').replace(/"/g, '""')}"`,
-        `"${(day.weeklyLosses || '').replace(/"/g, '""')}"`
+        `"${(day.weeklyLosses || '').replace(/"/g, '""')}"`,
+        (day.customTasks || []).length,
+        (day.customTasks || []).filter(t => t.done).length
       ];
     });
 

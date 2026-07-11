@@ -6,7 +6,7 @@ import {
   Sun, Moon, Coffee, Flame, Heart, Sparkles, Plus, Minus,
   CheckCircle2, AlertCircle, Dumbbell, Calendar, ChevronLeft, 
   ChevronRight, Smile, EyeOff, BookOpen, Clock, Activity, Zap, Trash2,
-  Lock, Unlock, Settings, Sliders
+  Lock, Unlock, Settings, Sliders, Smartphone, Download
 } from 'lucide-react';
 
 interface TrackerTabProps {
@@ -18,6 +18,11 @@ interface TrackerTabProps {
 export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTabProps) {
   // Local state for confetti or celebration burst
   const [showCelebration, setShowCelebration] = useState(false);
+
+  // Local state for custom input values to prevent DOM lookups failing
+  const [newAmExercise, setNewAmExercise] = useState('');
+  const [newPmExercise, setNewPmExercise] = useState('');
+  const [newCustomTaskText, setNewCustomTaskText] = useState('');
 
   // Layout customization preferences (durable inside localStorage)
   const [enabledSections, setEnabledSections] = useState<Record<string, boolean>>(() => {
@@ -40,6 +45,28 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
   });
 
   const [showSettings, setShowSettings] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User chosen PWA install outcome: ${outcome}`);
+      setDeferredPrompt(null);
+    } else {
+      setShowInstallGuide(true);
+    }
+  };
 
   const toggleSection = (sectionId: string) => {
     setEnabledSections(prev => {
@@ -72,28 +99,36 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
 
   // Handle nested Rehab Session updates
   const updateRehab1Exercise = (index: number, done: boolean) => {
-    const updatedExercises = [...dayData.rehab1.exercises];
-    updatedExercises[index] = { ...updatedExercises[index], done };
+    const rehab1 = dayData.rehab1 || { exercises: [], painBefore: 5, painAfter: 3 };
+    const rehab2 = dayData.rehab2 || { exercises: [], painBefore: 5, painAfter: 3 };
+    const updatedExercises = [...(rehab1.exercises || [])];
+    if (updatedExercises[index]) {
+      updatedExercises[index] = { ...updatedExercises[index], done };
+    }
     
     // Automatically flag rehab non-negotiable if both sessions are complete
-    const rehab1Done = updatedExercises.every(e => e.done);
-    const rehab2Done = dayData.rehab2.exercises.every(e => e.done);
+    const rehab1Done = updatedExercises.length > 0 ? updatedExercises.every(e => e.done) : false;
+    const rehab2Done = (rehab2.exercises || []).length > 0 ? (rehab2.exercises || []).every(e => e.done) : false;
     
     onChange({
-      rehab1: { ...dayData.rehab1, exercises: updatedExercises },
+      rehab1: { ...rehab1, exercises: updatedExercises },
       nonNegRehab: rehab1Done && rehab2Done
     });
   };
 
   const updateRehab2Exercise = (index: number, done: boolean) => {
-    const updatedExercises = [...dayData.rehab2.exercises];
-    updatedExercises[index] = { ...updatedExercises[index], done };
+    const rehab1 = dayData.rehab1 || { exercises: [], painBefore: 5, painAfter: 3 };
+    const rehab2 = dayData.rehab2 || { exercises: [], painBefore: 5, painAfter: 3 };
+    const updatedExercises = [...(rehab2.exercises || [])];
+    if (updatedExercises[index]) {
+      updatedExercises[index] = { ...updatedExercises[index], done };
+    }
     
-    const rehab1Done = dayData.rehab1.exercises.every(e => e.done);
-    const rehab2Done = updatedExercises.every(e => e.done);
+    const rehab1Done = (rehab1.exercises || []).length > 0 ? (rehab1.exercises || []).every(e => e.done) : false;
+    const rehab2Done = updatedExercises.length > 0 ? updatedExercises.every(e => e.done) : false;
 
     onChange({
-      rehab2: { ...dayData.rehab2, exercises: updatedExercises },
+      rehab2: { ...rehab2, exercises: updatedExercises },
       nonNegRehab: rehab1Done && rehab2Done
     });
   };
@@ -197,6 +232,13 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={handleInstallApp}
+            className="flex items-center gap-2 px-4 py-2 bg-brand-lime/10 hover:bg-brand-lime/20 border border-brand-lime/40 text-brand-lime hover:text-white font-mono text-xs font-black uppercase rounded-xl tracking-wider transition-all cursor-pointer"
+          >
+            <Smartphone className="w-4 h-4" />
+            📲 Install App
+          </button>
+          <button
             onClick={() => setShowSettings(!showSettings)}
             className="flex items-center gap-2 px-4 py-2 bg-brand-purple/10 hover:bg-brand-purple/20 border border-brand-purple/40 text-brand-purple hover:text-brand-lime font-mono text-xs font-black uppercase rounded-xl tracking-wider transition-all cursor-pointer"
           >
@@ -285,147 +327,249 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
           </div>
 
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-mono uppercase text-gray-400 mb-1">Wake-up Time</label>
-              <input 
-                type="time" 
-                value={dayData.wakeTime || ''}
-                onChange={e => onChange({ wakeTime: e.target.value })}
-                className="w-full bg-brand-bg border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-purple font-mono"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-mono uppercase text-gray-400 mb-1">Target Window</label>
-              <input 
-                type="text" 
-                value={dayData.targetWakeWindow || ''}
-                onChange={e => onChange({ targetWakeWindow: e.target.value })}
-                placeholder="06:00 - 06:30"
-                className="w-full bg-brand-bg border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-purple font-mono"
-              />
-            </div>
-          </div>
-
-          {/* No-Phone Hour */}
-          <div className="bg-brand-bg/50 rounded-xl p-4 border border-white/5 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <EyeOff className="w-4 h-4 text-brand-purple" />
-                <span className="text-sm font-semibold text-white">No-Phone First Hour</span>
-              </div>
-              <button
-                onClick={() => onChange({ noPhoneHour: !dayData.noPhoneHour })}
-                className={`px-3 py-1 text-xs uppercase font-mono font-bold rounded-lg border transition-all duration-200 ${
-                  dayData.noPhoneHour 
-                    ? 'bg-brand-lime/10 border-brand-lime text-brand-lime' 
-                    : 'bg-brand-coral/10 border-brand-coral/40 text-brand-coral'
-                }`}
-              >
-                {dayData.noPhoneHour ? 'HELD 🔒' : 'BROKEN 📱'}
-              </button>
-            </div>
-            {!dayData.noPhoneHour && (
-              <input 
-                type="text"
-                placeholder="Why did we break focus? Log it honestly..."
-                value={dayData.noPhoneNote || ''}
-                onChange={e => onChange({ noPhoneNote: e.target.value })}
-                className="w-full bg-brand-bg border border-brand-coral/20 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-coral"
-              />
-            )}
-          </div>
-
-          {/* Water Intake */}
-          <div className="bg-brand-bg/50 rounded-xl p-4 border border-white/5 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Coffee className="w-4 h-4 text-sky-400" />
-                <span className="text-sm font-semibold text-white">Water Intake Tracker</span>
-              </div>
-              <span className="text-xs font-mono text-gray-400">First glass: {dayData.waterFirstGlass || '--:--'}</span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1 bg-brand-bg border border-white/10 rounded-lg p-1">
-                <button 
-                  onClick={() => onChange({ waterTotalGlasses: Math.max(0, dayData.waterTotalGlasses - 1) })}
-                  className="p-1.5 hover:bg-white/5 rounded text-gray-400 hover:text-white"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <span className="w-10 text-center font-mono font-bold text-white text-base">
-                  {dayData.waterTotalGlasses}
-                </span>
-                <button 
-                  onClick={() => {
-                    const nextCount = dayData.waterTotalGlasses + 1;
-                    const updates: Partial<DayData> = { waterTotalGlasses: nextCount };
-                    if (nextCount === 1 && !dayData.waterFirstGlass) {
-                      const now = new Date();
-                      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                      updates.waterFirstGlass = timeStr;
-                    }
-                    // Auto toggle water non-negotiable if >= 8 glasses
-                    if (nextCount >= 8) {
-                      updates.nonNegWaterNutrition = true;
-                    }
-                    onChange(updates);
-                  }}
-                  className="p-1.5 hover:bg-white/5 rounded text-gray-400 hover:text-white"
-                >
-                  <Plus className="w-4 h-4 text-brand-lime" />
-                </button>
-              </div>
-
-              <div className="flex-1">
-                <div className="flex justify-between text-xs font-mono text-gray-400 mb-1">
-                  <span>Progress to 8 glasses</span>
-                  <span className={dayData.waterTotalGlasses >= 8 ? 'text-brand-lime font-bold' : ''}>
-                    {Math.min(100, Math.round((dayData.waterTotalGlasses / 8) * 100))}%
-                  </span>
+          <div className="space-y-4">
+            {/* Woke up at/before 5:30 AM */}
+            <div className="bg-brand-bg/50 rounded-xl p-4 border border-white/5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sun className="w-4 h-4 text-yellow-400" />
+                  <span className="text-sm font-semibold text-white">Woke Up at/before 5:30 AM?</span>
                 </div>
-                <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
-                  <div 
-                    className="bg-sky-400 h-full rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min(100, (dayData.waterTotalGlasses / 8) * 100)}%` }}
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange({
+                        wakeTime: '05:30',
+                        targetWakeWindow: '05:00 - 05:30'
+                      });
+                    }}
+                    className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                      dayData.wakeTime && dayData.wakeTime <= '05:30'
+                        ? 'bg-brand-lime text-black border-brand-lime'
+                        : 'bg-brand-lime/10 border-brand-lime/30 text-brand-lime hover:bg-brand-lime/25'
+                    }`}
+                  >
+                    YES
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange({
+                        wakeTime: '06:30',
+                        targetWakeWindow: '06:00 - 07:00'
+                      });
+                    }}
+                    className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                      dayData.wakeTime && dayData.wakeTime > '05:30'
+                        ? 'bg-brand-coral text-white border-brand-coral'
+                        : 'bg-brand-coral/10 border-brand-coral/30 text-brand-coral hover:bg-brand-coral/25'
+                    }`}
+                  >
+                    NO
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-gray-400 mb-1">Actual Time</label>
+                  <input 
+                    type="time" 
+                    value={dayData.wakeTime || ''}
+                    onChange={e => onChange({ wakeTime: e.target.value })}
+                    className="w-full bg-brand-bg border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-brand-purple font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-gray-400 mb-1">Target Window</label>
+                  <input 
+                    type="text" 
+                    value={dayData.targetWakeWindow || ''}
+                    onChange={e => onChange({ targetWakeWindow: e.target.value })}
+                    placeholder="05:00 - 05:30"
+                    className="w-full bg-brand-bg border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-brand-purple font-mono"
                   />
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Morning Routine: Meditation & Reading & Snack */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => onChange({ 
-                  meditationDone: !dayData.meditationDone,
-                  nonNegMeditation: !dayData.meditationDone // Auto-sync non-neg too
-                })}
-                className={`w-6 h-6 rounded-md border flex items-center justify-center transition-all ${
-                  dayData.meditationDone 
-                    ? 'bg-brand-lime border-brand-lime text-black' 
-                    : 'border-white/20 text-transparent'
-                }`}
-              >
-                <CheckCircle2 className="w-4 h-4" />
-              </button>
-              <div className="flex-1">
-                <div className="flex justify-between text-sm">
-                  <span className="font-semibold text-white">Daily Zen Meditation</span>
-                  <span className="text-xs font-mono text-gray-400">{dayData.meditationDuration} mins</span>
+            {/* No-Phone Hour */}
+            <div className="bg-brand-bg/50 rounded-xl p-4 border border-white/5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <EyeOff className="w-4 h-4 text-brand-purple" />
+                  <span className="text-sm font-semibold text-white">No-Phone First Hour?</span>
                 </div>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="60" 
-                  step="5"
-                  value={dayData.meditationDuration || 0}
-                  onChange={e => onChange({ meditationDuration: parseInt(e.target.value) })}
-                  className="w-full accent-brand-purple mt-1 cursor-pointer"
-                />
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => onChange({ noPhoneHour: true })}
+                    className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                      dayData.noPhoneHour
+                        ? 'bg-brand-lime text-black border-brand-lime'
+                        : 'bg-brand-lime/10 border-brand-lime/30 text-brand-lime hover:bg-brand-lime/25'
+                    }`}
+                  >
+                    YES
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onChange({ noPhoneHour: false })}
+                    className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                      !dayData.noPhoneHour
+                        ? 'bg-brand-coral text-white border-brand-coral'
+                        : 'bg-brand-coral/10 border-brand-coral/30 text-brand-coral hover:bg-brand-coral/25'
+                    }`}
+                  >
+                    NO
+                  </button>
+                </div>
               </div>
+              {!dayData.noPhoneHour && (
+                <input 
+                  type="text"
+                  placeholder="Why did we break focus? Log it honestly..."
+                  value={dayData.noPhoneNote || ''}
+                  onChange={e => onChange({ noPhoneNote: e.target.value })}
+                  className="w-full bg-brand-bg border border-brand-coral/20 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-coral"
+                />
+              )}
+            </div>
+
+            {/* Water Intake */}
+            <div className="bg-brand-bg/50 rounded-xl p-4 border border-white/5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Coffee className="w-4 h-4 text-sky-400" />
+                  <span className="text-sm font-semibold text-white">Drank 8 glasses of water?</span>
+                </div>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => onChange({ waterTotalGlasses: 8, nonNegWaterNutrition: true })}
+                    className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                      dayData.waterTotalGlasses >= 8
+                        ? 'bg-brand-lime text-black border-brand-lime'
+                        : 'bg-brand-lime/10 border-brand-lime/30 text-brand-lime hover:bg-brand-lime/25'
+                    }`}
+                  >
+                    YES
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onChange({ waterTotalGlasses: 0, nonNegWaterNutrition: false })}
+                    className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                      dayData.waterTotalGlasses < 8
+                        ? 'bg-brand-coral text-white border-brand-coral'
+                        : 'bg-brand-coral/10 border-brand-coral/30 text-brand-coral hover:bg-brand-coral/25'
+                    }`}
+                  >
+                    NO
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 pt-1 border-t border-white/5">
+                <div className="flex items-center gap-1 bg-brand-bg border border-white/10 rounded-lg p-1">
+                  <button 
+                    type="button"
+                    onClick={() => onChange({ waterTotalGlasses: Math.max(0, dayData.waterTotalGlasses - 1), nonNegWaterNutrition: Math.max(0, dayData.waterTotalGlasses - 1) >= 8 })}
+                    className="p-1.5 hover:bg-white/5 rounded text-gray-400 hover:text-white cursor-pointer"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="w-10 text-center font-mono font-bold text-white text-base">
+                    {dayData.waterTotalGlasses}
+                  </span>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const nextCount = dayData.waterTotalGlasses + 1;
+                      const updates: Partial<DayData> = { waterTotalGlasses: nextCount };
+                      if (nextCount === 1 && !dayData.waterFirstGlass) {
+                        const now = new Date();
+                        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                        updates.waterFirstGlass = timeStr;
+                      }
+                      if (nextCount >= 8) {
+                        updates.nonNegWaterNutrition = true;
+                      }
+                      onChange(updates);
+                    }}
+                    className="p-1.5 hover:bg-white/5 rounded text-gray-400 hover:text-white cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 text-brand-lime" />
+                  </button>
+                </div>
+
+                <div className="flex-1">
+                  <div className="flex justify-between text-xs font-mono text-gray-400 mb-1">
+                    <span>Progress ({dayData.waterTotalGlasses}/8)</span>
+                    <span className={dayData.waterTotalGlasses >= 8 ? 'text-brand-lime font-bold' : ''}>
+                      {Math.min(100, Math.round((dayData.waterTotalGlasses / 8) * 100))}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                    <div 
+                      className="bg-sky-400 h-full rounded-full transition-all duration-300"
+                      style={{ width: `${Math.min(100, (dayData.waterTotalGlasses / 8) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Daily Zen Meditation */}
+            <div className="bg-brand-bg/50 rounded-xl p-4 border border-white/5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-brand-purple" />
+                  <span className="text-sm font-semibold text-white">Daily Zen Meditation Done?</span>
+                </div>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => onChange({ meditationDone: true, nonNegMeditation: true, meditationDuration: Math.max(10, dayData.meditationDuration || 15) })}
+                    className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                      dayData.meditationDone
+                        ? 'bg-brand-lime text-black border-brand-lime'
+                        : 'bg-brand-lime/10 border-brand-lime/30 text-brand-lime hover:bg-brand-lime/25'
+                    }`}
+                  >
+                    YES
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onChange({ meditationDone: false, nonNegMeditation: false, meditationDuration: 0 })}
+                    className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                      !dayData.meditationDone
+                        ? 'bg-brand-coral text-white border-brand-coral'
+                        : 'bg-brand-coral/10 border-brand-coral/30 text-brand-coral hover:bg-brand-coral/25'
+                    }`}
+                  >
+                    NO
+                  </button>
+                </div>
+              </div>
+
+              {dayData.meditationDone && (
+                <div className="pt-2 border-t border-white/5">
+                  <div className="flex justify-between text-xs font-mono text-gray-400 mb-1">
+                    <span>Duration</span>
+                    <span className="text-brand-lime font-bold">{dayData.meditationDuration || 15} mins</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="5" 
+                    max="60" 
+                    step="5"
+                    value={dayData.meditationDuration || 15}
+                    onChange={e => onChange({ meditationDuration: parseInt(e.target.value) })}
+                    className="w-full accent-brand-purple cursor-pointer mt-1"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
@@ -832,17 +976,62 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
               <div className="flex items-center justify-between border-b border-white/5 pb-2">
                 <span className="text-xs font-mono uppercase tracking-wider text-brand-lime font-bold">REHAB AM SESSION</span>
                 <span className="text-[10px] font-mono text-gray-400">
-                  {dayData.rehab1.exercises.filter(e => e.done).length}/{dayData.rehab1.exercises.length} Complete
+                  {((dayData.rehab1 || {}).exercises || []).filter(e => e.done).length}/{((dayData.rehab1 || {}).exercises || []).length || 0} Complete
                 </span>
               </div>
 
+              {/* YES / NO Master toggle for AM Session */}
+              <div className="flex items-center justify-between bg-black/20 p-2 rounded-xl border border-white/5">
+                <span className="text-[11px] text-gray-300 font-bold uppercase tracking-wider">All AM Done?</span>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentExs = (dayData.rehab1 || {}).exercises || [];
+                      const updatedExercises = currentExs.map(e => ({ ...e, done: true }));
+                      const rehab2Done = ((dayData.rehab2 || {}).exercises || []).every(ex => ex.done);
+                      onChange({
+                        rehab1: { ...(dayData.rehab1 || { painBefore: 5, painAfter: 3, exercises: [] }), exercises: updatedExercises },
+                        nonNegRehab: rehab2Done
+                      });
+                    }}
+                    className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                      ((dayData.rehab1 || {}).exercises || []).length > 0 && ((dayData.rehab1 || {}).exercises || []).every(e => e.done)
+                        ? 'bg-brand-lime text-black border-brand-lime'
+                        : 'bg-brand-lime/10 border-brand-lime/30 text-brand-lime hover:bg-brand-lime/25'
+                    }`}
+                  >
+                    YES
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentExs = (dayData.rehab1 || {}).exercises || [];
+                      const updatedExercises = currentExs.map(e => ({ ...e, done: false }));
+                      onChange({
+                        rehab1: { ...(dayData.rehab1 || { painBefore: 5, painAfter: 3, exercises: [] }), exercises: updatedExercises },
+                        nonNegRehab: false
+                      });
+                    }}
+                    className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                      ((dayData.rehab1 || {}).exercises || []).length > 0 && ((dayData.rehab1 || {}).exercises || []).every(e => !e.done)
+                        ? 'bg-brand-coral text-white border-brand-coral'
+                        : 'bg-brand-coral/10 border-brand-coral/30 text-brand-coral hover:bg-brand-coral/25'
+                    }`}
+                  >
+                    NO
+                  </button>
+                </div>
+              </div>
+
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {dayData.rehab1.exercises.map((exercise, index) => (
+                {((dayData.rehab1 || {}).exercises || []).map((exercise, index) => (
                   <div key={index} className="flex items-center justify-between gap-3 group bg-black/10 hover:bg-black/25 p-1.5 rounded-lg border border-transparent hover:border-white/5 transition-all">
                     <div className="flex items-center gap-3">
                       <button 
+                        type="button"
                         onClick={() => updateRehab1Exercise(index, !exercise.done)}
-                        className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+                        className={`w-5 h-5 rounded border flex items-center justify-center transition-all cursor-pointer ${
                           exercise.done 
                             ? 'bg-brand-lime border-brand-lime text-black' 
                             : 'border-white/10 hover:border-white/20'
@@ -855,13 +1044,15 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
                       </span>
                     </div>
                     <button
+                      type="button"
                       onClick={() => {
-                        const updatedExercises = dayData.rehab1.exercises.filter((_, i) => i !== index);
-                        const rehab1Done = updatedExercises.every(ex => ex.done);
-                        const rehab2Done = dayData.rehab2.exercises.every(ex => ex.done);
+                        const currentExs = (dayData.rehab1 || {}).exercises || [];
+                        const updatedExercises = currentExs.filter((_, i) => i !== index);
+                        const rehab1Done = updatedExercises.length > 0 ? updatedExercises.every(ex => ex.done) : false;
+                        const rehab2Done = ((dayData.rehab2 || {}).exercises || []).length > 0 ? ((dayData.rehab2 || {}).exercises || []).every(ex => ex.done) : false;
                         onChange({
-                          rehab1: { ...dayData.rehab1, exercises: updatedExercises },
-                          nonNegRehab: (updatedExercises.length > 0 || dayData.rehab2.exercises.length > 0) ? (rehab1Done && rehab2Done) : false
+                          rehab1: { ...(dayData.rehab1 || { painBefore: 5, painAfter: 3, exercises: [] }), exercises: updatedExercises },
+                          nonNegRehab: (updatedExercises.length > 0 || ((dayData.rehab2 || {}).exercises || []).length > 0) ? (rehab1Done && rehab2Done) : false
                         });
                       }}
                       className="text-gray-500 hover:text-brand-coral transition-all p-1 rounded hover:bg-white/5 cursor-pointer"
@@ -871,7 +1062,7 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
                     </button>
                   </div>
                 ))}
-                {dayData.rehab1.exercises.length === 0 && (
+                {((dayData.rehab1 || {}).exercises || []).length === 0 && (
                   <div className="text-[10px] font-mono text-gray-500 italic py-1">No custom exercises logged for AM. Add one below!</div>
                 )}
               </div>
@@ -880,39 +1071,42 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
               <div className="flex gap-2 pt-1 border-t border-white/5">
                 <input
                   type="text"
-                  id={`new-am-exercise-${dayData.date}`}
                   placeholder="New AM exercise..."
+                  value={newAmExercise}
+                  onChange={e => setNewAmExercise(e.target.value)}
                   className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-brand-lime"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      const val = (e.currentTarget as HTMLInputElement).value.trim();
+                      e.preventDefault();
+                      const val = newAmExercise.trim();
                       if (val) {
-                        const updatedExercises = [...dayData.rehab1.exercises, { name: val, done: false }];
+                        const currentExs = (dayData.rehab1 || {}).exercises || [];
+                        const updatedExercises = [...currentExs, { name: val, done: false }];
                         const rehab1Done = updatedExercises.every(ex => ex.done);
-                        const rehab2Done = dayData.rehab2.exercises.every(ex => ex.done);
+                        const rehab2Done = ((dayData.rehab2 || {}).exercises || []).every(ex => ex.done);
                         onChange({
-                          rehab1: { ...dayData.rehab1, exercises: updatedExercises },
+                          rehab1: { ...(dayData.rehab1 || { painBefore: 5, painAfter: 3, exercises: [] }), exercises: updatedExercises },
                           nonNegRehab: rehab1Done && rehab2Done
                         });
-                        (e.currentTarget as HTMLInputElement).value = '';
+                        setNewAmExercise('');
                       }
                     }
                   }}
                 />
                 <button
                   type="button"
-                  onClick={(e) => {
-                    const inputEl = document.getElementById(`new-am-exercise-${dayData.date}`) as HTMLInputElement;
-                    const val = inputEl?.value.trim();
+                  onClick={() => {
+                    const val = newAmExercise.trim();
                     if (val) {
-                      const updatedExercises = [...dayData.rehab1.exercises, { name: val, done: false }];
+                      const currentExs = (dayData.rehab1 || {}).exercises || [];
+                      const updatedExercises = [...currentExs, { name: val, done: false }];
                       const rehab1Done = updatedExercises.every(ex => ex.done);
-                      const rehab2Done = dayData.rehab2.exercises.every(ex => ex.done);
+                      const rehab2Done = ((dayData.rehab2 || {}).exercises || []).every(ex => ex.done);
                       onChange({
-                        rehab1: { ...dayData.rehab1, exercises: updatedExercises },
+                        rehab1: { ...(dayData.rehab1 || { painBefore: 5, painAfter: 3, exercises: [] }), exercises: updatedExercises },
                         nonNegRehab: rehab1Done && rehab2Done
                       });
-                      inputEl.value = '';
+                      setNewAmExercise('');
                     }
                   }}
                   className="px-2.5 py-1 bg-brand-lime/10 border border-brand-lime/30 text-brand-lime rounded-lg hover:bg-brand-lime hover:text-black font-mono text-xs font-bold transition-all cursor-pointer"
@@ -923,20 +1117,20 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
 
               <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-gray-400 mb-1">Pain Before ({dayData.rehab1.painBefore}/10)</label>
+                  <label className="block text-[10px] font-mono uppercase text-gray-400 mb-1">Pain Before ({((dayData.rehab1 || {}).painBefore) || 5}/10)</label>
                   <input 
                     type="range" min="1" max="10" 
-                    value={dayData.rehab1.painBefore || 5}
-                    onChange={e => onChange({ rehab1: { ...dayData.rehab1, painBefore: parseInt(e.target.value) || 5 } })}
+                    value={((dayData.rehab1 || {}).painBefore) || 5}
+                    onChange={e => onChange({ rehab1: { ...(dayData.rehab1 || { exercises: [], painBefore: 5, painAfter: 3 }), painBefore: parseInt(e.target.value) || 5 } })}
                     className="w-full accent-brand-coral cursor-pointer"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-gray-400 mb-1">Pain After ({dayData.rehab1.painAfter}/10)</label>
+                  <label className="block text-[10px] font-mono uppercase text-gray-400 mb-1">Pain After ({((dayData.rehab1 || {}).painAfter) || 3}/10)</label>
                   <input 
                     type="range" min="1" max="10" 
-                    value={dayData.rehab1.painAfter || 3}
-                    onChange={e => onChange({ rehab1: { ...dayData.rehab1, painAfter: parseInt(e.target.value) || 3 } })}
+                    value={((dayData.rehab1 || {}).painAfter) || 3}
+                    onChange={e => onChange({ rehab1: { ...(dayData.rehab1 || { exercises: [], painBefore: 5, painAfter: 3 }), painAfter: parseInt(e.target.value) || 3 } })}
                     className="w-full accent-brand-lime cursor-pointer"
                   />
                 </div>
@@ -948,17 +1142,62 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
               <div className="flex items-center justify-between border-b border-white/5 pb-2">
                 <span className="text-xs font-mono uppercase tracking-wider text-brand-purple font-bold">REHAB PM SESSION</span>
                 <span className="text-[10px] font-mono text-gray-400">
-                  {dayData.rehab2.exercises.filter(e => e.done).length}/{dayData.rehab2.exercises.length} Complete
+                  {((dayData.rehab2 || {}).exercises || []).filter(e => e.done).length}/{((dayData.rehab2 || {}).exercises || []).length || 0} Complete
                 </span>
               </div>
 
+              {/* YES / NO Master toggle for PM Session */}
+              <div className="flex items-center justify-between bg-black/20 p-2 rounded-xl border border-white/5">
+                <span className="text-[11px] text-gray-300 font-bold uppercase tracking-wider">All PM Done?</span>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentExs = (dayData.rehab2 || {}).exercises || [];
+                      const updatedExercises = currentExs.map(e => ({ ...e, done: true }));
+                      const rehab1Done = ((dayData.rehab1 || {}).exercises || []).every(ex => ex.done);
+                      onChange({
+                        rehab2: { ...(dayData.rehab2 || { painBefore: 5, painAfter: 3, exercises: [] }), exercises: updatedExercises },
+                        nonNegRehab: rehab1Done
+                      });
+                    }}
+                    className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                      ((dayData.rehab2 || {}).exercises || []).length > 0 && ((dayData.rehab2 || {}).exercises || []).every(e => e.done)
+                        ? 'bg-brand-purple text-white border-brand-purple'
+                        : 'bg-brand-purple/10 border-brand-purple/30 text-brand-purple hover:bg-brand-purple/25'
+                    }`}
+                  >
+                    YES
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentExs = (dayData.rehab2 || {}).exercises || [];
+                      const updatedExercises = currentExs.map(e => ({ ...e, done: false }));
+                      onChange({
+                        rehab2: { ...(dayData.rehab2 || { painBefore: 5, painAfter: 3, exercises: [] }), exercises: updatedExercises },
+                        nonNegRehab: false
+                      });
+                    }}
+                    className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                      ((dayData.rehab2 || {}).exercises || []).length > 0 && ((dayData.rehab2 || {}).exercises || []).every(e => !e.done)
+                        ? 'bg-brand-coral text-white border-brand-coral'
+                        : 'bg-brand-coral/10 border-brand-coral/30 text-brand-coral hover:bg-brand-coral/25'
+                    }`}
+                  >
+                    NO
+                  </button>
+                </div>
+              </div>
+
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {dayData.rehab2.exercises.map((exercise, index) => (
+                {((dayData.rehab2 || {}).exercises || []).map((exercise, index) => (
                   <div key={index} className="flex items-center justify-between gap-3 group bg-black/10 hover:bg-black/25 p-1.5 rounded-lg border border-transparent hover:border-white/5 transition-all">
                     <div className="flex items-center gap-3">
                       <button 
+                        type="button"
                         onClick={() => updateRehab2Exercise(index, !exercise.done)}
-                        className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+                        className={`w-5 h-5 rounded border flex items-center justify-center transition-all cursor-pointer ${
                           exercise.done 
                             ? 'bg-brand-purple border-brand-purple text-white' 
                             : 'border-white/10 hover:border-white/20'
@@ -971,13 +1210,15 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
                       </span>
                     </div>
                     <button
+                      type="button"
                       onClick={() => {
-                        const updatedExercises = dayData.rehab2.exercises.filter((_, i) => i !== index);
-                        const rehab1Done = dayData.rehab1.exercises.every(ex => ex.done);
-                        const rehab2Done = updatedExercises.every(ex => ex.done);
+                        const currentExs = (dayData.rehab2 || {}).exercises || [];
+                        const updatedExercises = currentExs.filter((_, i) => i !== index);
+                        const rehab1Done = ((dayData.rehab1 || {}).exercises || []).length > 0 ? ((dayData.rehab1 || {}).exercises || []).every(ex => ex.done) : false;
+                        const rehab2Done = updatedExercises.length > 0 ? updatedExercises.every(ex => ex.done) : false;
                         onChange({
-                          rehab2: { ...dayData.rehab2, exercises: updatedExercises },
-                          nonNegRehab: (dayData.rehab1.exercises.length > 0 || updatedExercises.length > 0) ? (rehab1Done && rehab2Done) : false
+                          rehab2: { ...(dayData.rehab2 || { painBefore: 5, painAfter: 3, exercises: [] }), exercises: updatedExercises },
+                          nonNegRehab: (((dayData.rehab1 || {}).exercises || []).length > 0 || updatedExercises.length > 0) ? (rehab1Done && rehab2Done) : false
                         });
                       }}
                       className="text-gray-500 hover:text-brand-coral transition-all p-1 rounded hover:bg-white/5 cursor-pointer"
@@ -987,7 +1228,7 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
                     </button>
                   </div>
                 ))}
-                {dayData.rehab2.exercises.length === 0 && (
+                {((dayData.rehab2 || {}).exercises || []).length === 0 && (
                   <div className="text-[10px] font-mono text-gray-500 italic py-1">No custom exercises logged for PM. Add one below!</div>
                 )}
               </div>
@@ -996,39 +1237,42 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
               <div className="flex gap-2 pt-1 border-t border-white/5">
                 <input
                   type="text"
-                  id={`new-pm-exercise-${dayData.date}`}
                   placeholder="New PM exercise..."
+                  value={newPmExercise}
+                  onChange={e => setNewPmExercise(e.target.value)}
                   className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-brand-purple"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      const val = (e.currentTarget as HTMLInputElement).value.trim();
+                      e.preventDefault();
+                      const val = newPmExercise.trim();
                       if (val) {
-                        const updatedExercises = [...dayData.rehab2.exercises, { name: val, done: false }];
-                        const rehab1Done = dayData.rehab1.exercises.every(ex => ex.done);
+                        const currentExs = (dayData.rehab2 || {}).exercises || [];
+                        const updatedExercises = [...currentExs, { name: val, done: false }];
+                        const rehab1Done = ((dayData.rehab1 || {}).exercises || []).every(ex => ex.done);
                         const rehab2Done = updatedExercises.every(ex => ex.done);
                         onChange({
-                          rehab2: { ...dayData.rehab2, exercises: updatedExercises },
+                          rehab2: { ...(dayData.rehab2 || { painBefore: 5, painAfter: 3, exercises: [] }), exercises: updatedExercises },
                           nonNegRehab: rehab1Done && rehab2Done
                         });
-                        (e.currentTarget as HTMLInputElement).value = '';
+                        setNewPmExercise('');
                       }
                     }
                   }}
                 />
                 <button
                   type="button"
-                  onClick={(e) => {
-                    const inputEl = document.getElementById(`new-pm-exercise-${dayData.date}`) as HTMLInputElement;
-                    const val = inputEl?.value.trim();
+                  onClick={() => {
+                    const val = newPmExercise.trim();
                     if (val) {
-                      const updatedExercises = [...dayData.rehab2.exercises, { name: val, done: false }];
-                      const rehab1Done = dayData.rehab1.exercises.every(ex => ex.done);
+                      const currentExs = (dayData.rehab2 || {}).exercises || [];
+                      const updatedExercises = [...currentExs, { name: val, done: false }];
+                      const rehab1Done = ((dayData.rehab1 || {}).exercises || []).every(ex => ex.done);
                       const rehab2Done = updatedExercises.every(ex => ex.done);
                       onChange({
-                        rehab2: { ...dayData.rehab2, exercises: updatedExercises },
+                        rehab2: { ...(dayData.rehab2 || { painBefore: 5, painAfter: 3, exercises: [] }), exercises: updatedExercises },
                         nonNegRehab: rehab1Done && rehab2Done
                       });
-                      inputEl.value = '';
+                      setNewPmExercise('');
                     }
                   }}
                   className="px-2.5 py-1 bg-brand-purple/10 border border-brand-purple/30 text-brand-purple rounded-lg hover:bg-brand-purple hover:text-white font-mono text-xs font-bold transition-all cursor-pointer"
@@ -1039,20 +1283,20 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
 
               <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-gray-400 mb-1">Pain Before ({dayData.rehab2.painBefore}/10)</label>
+                  <label className="block text-[10px] font-mono uppercase text-gray-400 mb-1">Pain Before ({((dayData.rehab2 || {}).painBefore) || 5}/10)</label>
                   <input 
                     type="range" min="1" max="10" 
-                    value={dayData.rehab2.painBefore || 5}
-                    onChange={e => onChange({ rehab2: { ...dayData.rehab2, painBefore: parseInt(e.target.value) || 5 } })}
+                    value={((dayData.rehab2 || {}).painBefore) || 5}
+                    onChange={e => onChange({ rehab2: { ...(dayData.rehab2 || { exercises: [], painBefore: 5, painAfter: 3 }), painBefore: parseInt(e.target.value) || 5 } })}
                     className="w-full accent-brand-coral cursor-pointer"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-gray-400 mb-1">Pain After ({dayData.rehab2.painAfter}/10)</label>
+                  <label className="block text-[10px] font-mono uppercase text-gray-400 mb-1">Pain After ({((dayData.rehab2 || {}).painAfter) || 3}/10)</label>
                   <input 
                     type="range" min="1" max="10" 
-                    value={dayData.rehab2.painAfter || 3}
-                    onChange={e => onChange({ rehab2: { ...dayData.rehab2, painAfter: parseInt(e.target.value) || 3 } })}
+                    value={((dayData.rehab2 || {}).painAfter) || 3}
+                    onChange={e => onChange({ rehab2: { ...(dayData.rehab2 || { exercises: [], painBefore: 5, painAfter: 3 }), painAfter: parseInt(e.target.value) || 3 } })}
                     className="w-full accent-brand-lime cursor-pointer"
                   />
                 </div>
@@ -1106,65 +1350,113 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
                   </div>
 
                   <div className="space-y-3 pt-1">
-                    <label className="flex items-center justify-between p-2 rounded-lg bg-brand-bg border border-white/5 hover:border-white/15 cursor-pointer">
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-brand-bg border border-white/5 hover:border-white/15">
                       <div className="flex items-center gap-3">
-                        <input 
-                          type="checkbox"
-                          checked={dayData.nonNegRehab}
-                          onChange={e => onChange({ nonNegRehab: e.target.checked })}
-                          className="w-5 h-5 rounded border-white/20 text-brand-lime focus:ring-brand-lime accent-brand-lime"
-                        />
+                        <Dumbbell className={`w-4 h-4 ${dayData.nonNegRehab ? 'text-brand-lime' : 'text-gray-500'}`} />
                         <div>
                           <div className="text-sm font-bold text-white">Full Rehab Protocol</div>
                           <p className="text-xs text-gray-500">Do all exercises in both physiotherapy blocks</p>
                         </div>
                       </div>
-                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
-                        dayData.nonNegRehab ? 'bg-brand-lime/10 text-brand-lime' : 'bg-white/5 text-gray-500'
-                      }`}>
-                        {dayData.nonNegRehab ? 'SECURED' : 'PENDING'}
-                      </span>
-                    </label>
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => onChange({ nonNegRehab: true })}
+                            className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                              dayData.nonNegRehab
+                                ? 'bg-brand-lime text-black border-brand-lime'
+                                : 'bg-brand-lime/10 border-brand-lime/30 text-brand-lime hover:bg-brand-lime/25'
+                            }`}
+                          >
+                            YES
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onChange({ nonNegRehab: false })}
+                            className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                              !dayData.nonNegRehab
+                                ? 'bg-brand-coral text-white border-brand-coral'
+                                : 'bg-brand-coral/10 border-brand-coral/30 text-brand-coral hover:bg-brand-coral/25'
+                            }`}
+                          >
+                            NO
+                          </button>
+                        </div>
+                      </div>
+                    </div>
 
-                    <label className="flex items-center justify-between p-2 rounded-lg bg-brand-bg border border-white/5 hover:border-white/15 cursor-pointer">
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-brand-bg border border-white/5 hover:border-white/15">
                       <div className="flex items-center gap-3">
-                        <input 
-                          type="checkbox"
-                          checked={dayData.nonNegMeditation}
-                          onChange={e => onChange({ nonNegMeditation: e.target.checked })}
-                          className="w-5 h-5 rounded border-white/20 text-brand-lime focus:ring-brand-lime accent-brand-lime"
-                        />
+                        <Heart className={`w-4 h-4 ${dayData.nonNegMeditation ? 'text-brand-lime' : 'text-gray-500'}`} />
                         <div>
                           <div className="text-sm font-bold text-white">Daily Zen Meditation</div>
                           <p className="text-xs text-gray-500">Complete at least 10 minutes of breathing flow</p>
                         </div>
                       </div>
-                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
-                        dayData.nonNegMeditation ? 'bg-brand-lime/10 text-brand-lime' : 'bg-white/5 text-gray-500'
-                      }`}>
-                        {dayData.nonNegMeditation ? 'SECURED' : 'PENDING'}
-                      </span>
-                    </label>
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => onChange({ nonNegMeditation: true, meditationDone: true, meditationDuration: Math.max(10, dayData.meditationDuration || 15) })}
+                            className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                              dayData.nonNegMeditation
+                                ? 'bg-brand-lime text-black border-brand-lime'
+                                : 'bg-brand-lime/10 border-brand-lime/30 text-brand-lime hover:bg-brand-lime/25'
+                            }`}
+                          >
+                            YES
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onChange({ nonNegMeditation: false, meditationDone: false, meditationDuration: 0 })}
+                            className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                              !dayData.nonNegMeditation
+                                ? 'bg-brand-coral text-white border-brand-coral'
+                                : 'bg-brand-coral/10 border-brand-coral/30 text-brand-coral hover:bg-brand-coral/25'
+                            }`}
+                          >
+                            NO
+                          </button>
+                        </div>
+                      </div>
+                    </div>
 
-                    <label className="flex items-center justify-between p-2 rounded-lg bg-brand-bg border border-white/5 hover:border-white/15 cursor-pointer">
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-brand-bg border border-white/5 hover:border-white/15">
                       <div className="flex items-center gap-3">
-                        <input 
-                          type="checkbox"
-                          checked={dayData.nonNegWaterNutrition}
-                          onChange={e => onChange({ nonNegWaterNutrition: e.target.checked })}
-                          className="w-5 h-5 rounded border-white/20 text-brand-lime focus:ring-brand-lime accent-brand-lime"
-                        />
+                        <Coffee className={`w-4 h-4 ${dayData.nonNegWaterNutrition ? 'text-brand-lime' : 'text-gray-500'}`} />
                         <div>
                           <div className="text-sm font-bold text-white">Water & Nutrition Base</div>
                           <p className="text-xs text-gray-500">Drink at least 8 glasses and log meals cleanly</p>
                         </div>
                       </div>
-                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
-                        dayData.nonNegWaterNutrition ? 'bg-brand-lime/10 text-brand-lime' : 'bg-white/5 text-gray-500'
-                      }`}>
-                        {dayData.nonNegWaterNutrition ? 'SECURED' : 'PENDING'}
-                      </span>
-                    </label>
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => onChange({ nonNegWaterNutrition: true, waterTotalGlasses: Math.max(8, dayData.waterTotalGlasses || 8) })}
+                            className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                              dayData.nonNegWaterNutrition
+                                ? 'bg-brand-lime text-black border-brand-lime'
+                                : 'bg-brand-lime/10 border-brand-lime/30 text-brand-lime hover:bg-brand-lime/25'
+                            }`}
+                          >
+                            YES
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onChange({ nonNegWaterNutrition: false, waterTotalGlasses: Math.min(7, dayData.waterTotalGlasses) })}
+                            className={`px-3 py-1 text-[10px] uppercase font-mono font-black rounded-lg border transition-all cursor-pointer ${
+                              !dayData.nonNegWaterNutrition
+                                ? 'bg-brand-coral text-white border-brand-coral'
+                                : 'bg-brand-coral/10 border-brand-coral/30 text-brand-coral hover:bg-brand-coral/25'
+                            }`}
+                          >
+                            NO
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1181,70 +1473,265 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <label className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className={`flex flex-col p-3 rounded-xl border transition-all ${
                     dayData.bonusReading ? 'bg-brand-purple/10 border-brand-purple text-white' : 'bg-brand-bg/40 border-white/5 text-gray-400'
                   }`}>
                     <div className="flex items-center justify-between">
-                      <BookOpen className="w-4 h-4 text-brand-purple" />
-                      <input 
-                        type="checkbox" 
-                        checked={dayData.bonusReading}
-                        onChange={e => onChange({ bonusReading: e.target.checked })}
-                        className="rounded border-white/20 text-brand-purple focus:ring-brand-purple accent-brand-purple"
-                      />
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-brand-purple" />
+                        <span className="text-sm font-bold text-white">Daily Reading</span>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onChange({ bonusReading: true })}
+                          className={`px-2 py-0.5 text-[9px] uppercase font-mono font-bold rounded border transition-all cursor-pointer ${
+                            dayData.bonusReading 
+                              ? 'bg-brand-lime text-black border-brand-lime font-black' 
+                              : 'bg-brand-lime/10 border-brand-lime/20 text-brand-lime hover:bg-brand-lime/15'
+                          }`}
+                        >
+                          YES
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onChange({ bonusReading: false })}
+                          className={`px-2 py-0.5 text-[9px] uppercase font-mono font-bold rounded border transition-all cursor-pointer ${
+                            !dayData.bonusReading 
+                              ? 'bg-brand-coral text-white border-brand-coral font-black' 
+                              : 'bg-brand-coral/10 border-brand-coral/20 text-brand-coral hover:bg-brand-coral/15'
+                          }`}
+                        >
+                          NO
+                        </button>
+                      </div>
                     </div>
-                    <span className="text-sm font-bold mt-2 text-white">Daily Reading</span>
                     <span className="text-[10px] text-gray-500 mt-1">Acquired deep knowledge</span>
-                  </label>
+                  </div>
 
-                  <label className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
+                  <div className={`flex flex-col p-3 rounded-xl border transition-all ${
                     dayData.bonusJournal ? 'bg-brand-purple/10 border-brand-purple text-white' : 'bg-brand-bg/40 border-white/5 text-gray-400'
                   }`}>
                     <div className="flex items-center justify-between">
-                      <Clock className="w-4 h-4 text-brand-purple" />
-                      <input 
-                        type="checkbox" 
-                        checked={dayData.bonusJournal}
-                        onChange={e => onChange({ bonusJournal: e.target.checked })}
-                        className="rounded border-white/20 text-brand-purple focus:ring-brand-purple accent-brand-purple"
-                      />
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-brand-purple" />
+                        <span className="text-sm font-bold text-white">Cold Real-talk Journal</span>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onChange({ bonusJournal: true })}
+                          className={`px-2 py-0.5 text-[9px] uppercase font-mono font-bold rounded border transition-all cursor-pointer ${
+                            dayData.bonusJournal 
+                              ? 'bg-brand-lime text-black border-brand-lime font-black' 
+                              : 'bg-brand-lime/10 border-brand-lime/20 text-brand-lime hover:bg-brand-lime/15'
+                          }`}
+                        >
+                          YES
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onChange({ bonusJournal: false })}
+                          className={`px-2 py-0.5 text-[9px] uppercase font-mono font-bold rounded border transition-all cursor-pointer ${
+                            !dayData.bonusJournal 
+                              ? 'bg-brand-coral text-white border-brand-coral font-black' 
+                              : 'bg-brand-coral/10 border-brand-coral/20 text-brand-coral hover:bg-brand-coral/15'
+                          }`}
+                        >
+                          NO
+                        </button>
+                      </div>
                     </div>
-                    <span className="text-sm font-bold mt-2 text-white">Cold Real-talk Journal</span>
                     <span className="text-[10px] text-gray-500 mt-1">Reflected honestly</span>
-                  </label>
+                  </div>
 
-                  <label className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
+                  <div className={`flex flex-col p-3 rounded-xl border transition-all ${
                     dayData.bonusDeepStudy ? 'bg-brand-purple/10 border-brand-purple text-white' : 'bg-brand-bg/40 border-white/5 text-gray-400'
                   }`}>
                     <div className="flex items-center justify-between">
-                      <Zap className="w-4 h-4 text-brand-purple" />
-                      <input 
-                        type="checkbox" 
-                        checked={dayData.bonusDeepStudy}
-                        onChange={e => onChange({ bonusDeepStudy: e.target.checked })}
-                        className="rounded border-white/20 text-brand-purple focus:ring-brand-purple accent-brand-purple"
-                      />
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-brand-purple" />
+                        <span className="text-sm font-bold text-white">Deep Study</span>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onChange({ bonusDeepStudy: true })}
+                          className={`px-2 py-0.5 text-[9px] uppercase font-mono font-bold rounded border transition-all cursor-pointer ${
+                            dayData.bonusDeepStudy 
+                              ? 'bg-brand-lime text-black border-brand-lime font-black' 
+                              : 'bg-brand-lime/10 border-brand-lime/20 text-brand-lime hover:bg-brand-lime/15'
+                          }`}
+                        >
+                          YES
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onChange({ bonusDeepStudy: false })}
+                          className={`px-2 py-0.5 text-[9px] uppercase font-mono font-bold rounded border transition-all cursor-pointer ${
+                            !dayData.bonusDeepStudy 
+                              ? 'bg-brand-coral text-white border-brand-coral font-black' 
+                              : 'bg-brand-coral/10 border-brand-coral/20 text-brand-coral hover:bg-brand-coral/15'
+                          }`}
+                        >
+                          NO
+                        </button>
+                      </div>
                     </div>
-                    <span className="text-sm font-bold mt-2 text-white">Deep Study</span>
                     <span className="text-[10px] text-gray-500 mt-1">No phone, no notifications</span>
-                  </label>
+                  </div>
 
-                  <label className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
+                  <div className={`flex flex-col p-3 rounded-xl border transition-all ${
                     dayData.bonusFocusProtected ? 'bg-brand-purple/10 border-brand-purple text-white' : 'bg-brand-bg/40 border-white/5 text-gray-400'
                   }`}>
                     <div className="flex items-center justify-between">
-                      <EyeOff className="w-4 h-4 text-brand-purple" />
-                      <input 
-                        type="checkbox" 
-                        checked={dayData.bonusFocusProtected}
-                        onChange={e => onChange({ bonusFocusProtected: e.target.checked })}
-                        className="rounded border-white/20 text-brand-purple focus:ring-brand-purple accent-brand-purple"
-                      />
+                      <div className="flex items-center gap-2">
+                        <EyeOff className="w-4 h-4 text-brand-purple" />
+                        <span className="text-sm font-bold text-white">Focus Shielded</span>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onChange({ bonusFocusProtected: true })}
+                          className={`px-2 py-0.5 text-[9px] uppercase font-mono font-bold rounded border transition-all cursor-pointer ${
+                            dayData.bonusFocusProtected 
+                              ? 'bg-brand-lime text-black border-brand-lime font-black' 
+                              : 'bg-brand-lime/10 border-brand-lime/20 text-brand-lime hover:bg-brand-lime/15'
+                          }`}
+                        >
+                          YES
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onChange({ bonusFocusProtected: false })}
+                          className={`px-2 py-0.5 text-[9px] uppercase font-mono font-bold rounded border transition-all cursor-pointer ${
+                            !dayData.bonusFocusProtected 
+                              ? 'bg-brand-coral text-white border-brand-coral font-black' 
+                              : 'bg-brand-coral/10 border-brand-coral/20 text-brand-coral hover:bg-brand-coral/15'
+                          }`}
+                        >
+                          NO
+                        </button>
+                      </div>
                     </div>
-                    <span className="text-sm font-bold mt-2 text-white">Focus Shielded</span>
                     <span className="text-[10px] text-gray-500 mt-1">Destroyed distractions</span>
-                  </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* 🎯 DYNAMIC DAILY CHECKS (Add Your Own Tasks) */}
+              <div className="space-y-3 pt-3 border-t border-white/5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-display font-black tracking-wider text-brand-lime uppercase flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-brand-lime animate-pulse" />
+                    🎯 DYNAMIC DAILY CHECKS
+                  </h4>
+                  <span className="text-[10px] font-mono bg-brand-lime/15 border border-brand-lime/40 text-brand-lime px-2 py-0.5 rounded uppercase font-bold">
+                    PERSONALIZED
+                  </span>
+                </div>
+
+                <div className="space-y-3 bg-brand-bg/40 border border-white/5 rounded-xl p-4">
+                  <div className="space-y-2 max-h-56 overflow-y-auto">
+                    {(dayData.customTasks || []).map((task) => (
+                      <div key={task.id} className="flex items-center justify-between gap-3 p-2 bg-brand-bg rounded-lg border border-white/5">
+                        <span className={`text-xs ${task.done ? 'text-gray-400 line-through' : 'text-white font-semibold'}`}>
+                          {task.name}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = (dayData.customTasks || []).map(t => 
+                                  t.id === task.id ? { ...t, done: true } : t
+                                );
+                                onChange({ customTasks: updated });
+                              }}
+                              className={`px-2 py-0.5 text-[9px] uppercase font-mono font-bold rounded border transition-all cursor-pointer ${
+                                task.done 
+                                  ? 'bg-brand-lime text-black border-brand-lime' 
+                                  : 'bg-brand-lime/5 border-brand-lime/20 text-brand-lime hover:bg-brand-lime/15'
+                              }`}
+                            >
+                              YES
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = (dayData.customTasks || []).map(t => 
+                                  t.id === task.id ? { ...t, done: false } : t
+                                );
+                                onChange({ customTasks: updated });
+                              }}
+                              className={`px-2 py-0.5 text-[9px] uppercase font-mono font-bold rounded border transition-all cursor-pointer ${
+                                !task.done 
+                                  ? 'bg-brand-coral text-white border-brand-coral' 
+                                  : 'bg-brand-coral/5 border-brand-coral/20 text-brand-coral hover:bg-brand-coral/15'
+                              }`}
+                            >
+                              NO
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = (dayData.customTasks || []).filter(t => t.id !== task.id);
+                              onChange({ customTasks: updated });
+                            }}
+                            className="text-gray-500 hover:text-brand-coral transition-all p-1 rounded hover:bg-white/5 cursor-pointer"
+                            title="Delete Task"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {(dayData.customTasks || []).length === 0 && (
+                      <p className="text-[10px] text-gray-500 italic text-center py-2">
+                        No personalized tasks added for today. Create some below!
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Add personalized task input */}
+                  <div className="flex gap-2 pt-2 border-t border-white/5">
+                    <input
+                      type="text"
+                      placeholder="Add custom task (e.g., Cold plunge, take vitamins...)"
+                      value={newCustomTaskText}
+                      onChange={e => setNewCustomTaskText(e.target.value)}
+                      className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-brand-lime"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const val = newCustomTaskText.trim();
+                          if (val) {
+                            const newTask = { id: Math.random().toString(36).substring(2), name: val, done: false };
+                            const updated = [...(dayData.customTasks || []), newTask];
+                            onChange({ customTasks: updated });
+                            setNewCustomTaskText('');
+                          }
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = newCustomTaskText.trim();
+                        if (val) {
+                          const newTask = { id: Math.random().toString(36).substring(2), name: val, done: false };
+                          const updated = [...(dayData.customTasks || []), newTask];
+                          onChange({ customTasks: updated });
+                          setNewCustomTaskText('');
+                        }
+                      }}
+                      className="px-2.5 py-1 bg-brand-lime/10 border border-brand-lime/30 text-brand-lime rounded-lg hover:bg-brand-lime hover:text-black font-mono text-xs font-bold transition-all cursor-pointer"
+                    >
+                      + Add
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1489,6 +1976,75 @@ export default function TrackerTab({ dayData, onChange, streakCount }: TrackerTa
           )}
         </div>
       </div>
+
+      {/* 📱 PWA INSTALLATION GUIDE MODAL */}
+      <AnimatePresence>
+        {showInstallGuide && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-brand-card border border-brand-border/80 rounded-3xl p-6 max-w-md w-full space-y-6 shadow-2xl relative"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-brand-lime/10 text-brand-lime flex items-center justify-center">
+                    <Smartphone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black uppercase text-white tracking-wider">INSTALL INDEPENDENT APP</h3>
+                    <p className="text-xs text-gray-400">Run LOCKED IN as a native application</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowInstallGuide(false)}
+                  className="text-gray-500 hover:text-white text-sm font-bold font-mono p-1 rounded-lg hover:bg-white/5 cursor-pointer"
+                >
+                  ✕ CLOSE
+                </button>
+              </div>
+
+              <div className="space-y-4 text-xs">
+                <div className="space-y-2 bg-brand-bg/50 border border-white/5 rounded-xl p-4">
+                  <h4 className="font-bold text-white uppercase tracking-wider text-[10px] text-brand-lime">🍏 Apple iOS (iPhone/iPad Safari)</h4>
+                  <ol className="list-decimal list-inside space-y-1.5 text-gray-300">
+                    <li>Open this app in <span className="text-white font-bold">Safari Browser</span></li>
+                    <li>Tap the <span className="text-white font-bold">Share button</span> (the square icon with an arrow pointing up at the bottom)</li>
+                    <li>Scroll down and select <span className="text-white font-bold">"Add to Home Screen"</span></li>
+                    <li>Tap <span className="text-white font-bold">"Add"</span> in the top-right corner to install</li>
+                  </ol>
+                </div>
+
+                <div className="space-y-2 bg-brand-bg/50 border border-white/5 rounded-xl p-4">
+                  <h4 className="font-bold text-white uppercase tracking-wider text-[10px] text-brand-purple">🤖 Android (Chrome/Firefox)</h4>
+                  <ol className="list-decimal list-inside space-y-1.5 text-gray-300">
+                    <li>Tap the <span className="text-white font-bold">Three Dots (menu)</span> in the top-right corner of Chrome</li>
+                    <li>Select <span className="text-white font-bold">"Install App"</span> or <span className="text-white font-bold">"Add to Home Screen"</span></li>
+                    <li>Confirm the prompt to install the independent app</li>
+                  </ol>
+                </div>
+
+                <div className="space-y-2 bg-brand-bg/50 border border-white/5 rounded-xl p-4">
+                  <h4 className="font-bold text-white uppercase tracking-wider text-[10px] text-sky-400">💻 Desktop (Chrome/Edge)</h4>
+                  <p className="text-gray-300 leading-relaxed">
+                    Click the <span className="text-white font-bold">Install Monitor Icon</span> on the right-hand side of your browser URL search bar to add it directly to your dock or desktop workspace.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowInstallGuide(false)}
+                className="w-full py-3 bg-brand-lime text-black font-mono text-xs font-black uppercase rounded-xl tracking-wider hover:bg-brand-lime/90 transition-all cursor-pointer"
+              >
+                I UNDERSTAND
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

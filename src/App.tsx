@@ -276,15 +276,16 @@ export default function App() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A0A0F] text-white flex flex-col items-center justify-center font-sans p-6 select-none">
-        <div className="text-center space-y-6">
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-none italic uppercase text-brand-lime skew-x-[-10deg] animate-pulse">
-            LOADING DATABASE
+        <div className="text-center space-y-6 flex flex-col items-center">
+          <img src="/logo.svg" alt="LOCKED IN Logo" className="w-24 h-24 md:w-32 md:h-32 drop-shadow-[0_0_30px_rgba(139,92,246,0.4)] animate-pulse mb-4 pointer-events-none select-none" />
+          <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none italic uppercase text-brand-lime skew-x-[-10deg]">
+            LOCKED IN
           </h1>
-          <p className="text-brand-purple font-bold tracking-widest text-xs sm:text-sm uppercase">
+          <p className="text-brand-purple font-bold tracking-widest text-[10px] sm:text-xs uppercase">
             ESTABLISHING CLOUD PROTOCOL CONNECTION
           </p>
-          <div className="flex items-center justify-center space-x-2 text-brand-lime font-mono text-xs">
-            <span className="w-2.5 h-2.5 rounded-full bg-brand-lime animate-ping" />
+          <div className="flex items-center justify-center space-x-2 text-brand-lime font-mono text-[10px] pt-2">
+            <span className="w-2 h-2 rounded-full bg-brand-lime animate-ping" />
             <span>SYNCING WITH CLOUD FIRESTORE...</span>
           </div>
         </div>
@@ -299,13 +300,16 @@ export default function App() {
       <header className="border-b border-brand-border/40 bg-[#0A0A0F] sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col lg:flex-row items-center lg:items-end justify-between gap-6">
           
-          <div className="flex flex-col text-center lg:text-left">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-none italic uppercase text-brand-lime skew-x-[-10deg]">
-              LOCKED IN
-            </h1>
-            <p className="text-brand-purple font-bold tracking-widest text-xs sm:text-sm uppercase mt-1">
-              Elite Performance Daily Log
-            </p>
+          <div className="flex flex-col sm:flex-row items-center gap-4 text-center lg:text-left">
+            <img src="/logo.svg" alt="LOCKED IN logo" className="w-12 h-12 md:w-14 md:h-14 drop-shadow-[0_0_15px_rgba(139,92,246,0.35)] select-none pointer-events-none animate-pulse" />
+            <div className="flex flex-col">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter leading-none italic uppercase text-brand-lime skew-x-[-10deg]">
+                LOCKED IN
+              </h1>
+              <p className="text-brand-purple font-bold tracking-widest text-xs uppercase mt-1">
+                Elite Performance Daily Log
+              </p>
+            </div>
           </div>
 
           {/* MOTIVATIONAL QUOTE MARQUEE */}

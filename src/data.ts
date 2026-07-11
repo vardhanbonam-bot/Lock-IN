@@ -93,6 +93,7 @@ export function createBlankDay(date: string): DayData {
     bonusJournal: false,
     bonusDeepStudy: false,
     bonusFocusProtected: false,
+    customTasks: [],
     weeklyWins: '',
     weeklyLosses: '',
     weeklyData: '',

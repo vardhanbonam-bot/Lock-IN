@@ -318,7 +318,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[#0A0A0F] text-white flex flex-col items-center justify-center font-sans p-6 select-none">
         <div className="text-center space-y-6 flex flex-col items-center">
-          <img src="/logo.svg" alt="LOCKED IN Logo" className="w-24 h-24 md:w-32 md:h-32 drop-shadow-[0_0_30px_rgba(139,92,246,0.4)] animate-pulse mb-4 pointer-events-none select-none" />
+          <img src="/logo.svg" alt="LOCKED IN Logo" className="w-12 h-12 md:w-16 md:h-16 drop-shadow-[0_0_20px_rgba(139,92,246,0.35)] animate-pulse mb-4 pointer-events-none select-none" />
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none italic uppercase text-brand-lime skew-x-[-10deg]">
             LOCKED IN
           </h1>
@@ -370,7 +370,7 @@ export default function App() {
             <img 
               src="/logo.svg" 
               alt="LOCKED IN Logo" 
-              className="w-16 h-16 mx-auto drop-shadow-[0_0_20px_rgba(139,92,246,0.35)] mb-4 animate-pulse select-none" 
+              className="w-10 h-10 mx-auto drop-shadow-[0_0_15px_rgba(139,92,246,0.3)] mb-3 animate-pulse select-none" 
             />
             <h1 className="text-4xl md:text-5xl font-black tracking-tighter leading-none italic uppercase text-brand-lime skew-x-[-10deg]">
               LOCKED IN
@@ -486,7 +486,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col lg:flex-row items-center lg:items-end justify-between gap-6">
           
           <div className="flex flex-col sm:flex-row items-center gap-4 text-center lg:text-left">
-            <img src="/logo.svg" alt="LOCKED IN logo" className="w-12 h-12 md:w-14 md:h-14 drop-shadow-[0_0_15px_rgba(139,92,246,0.35)] select-none pointer-events-none animate-pulse" />
+            <img src="/logo.svg" alt="LOCKED IN logo" className="w-8 h-8 md:w-10 md:h-10 drop-shadow-[0_0_12px_rgba(139,92,246,0.35)] select-none pointer-events-none animate-pulse" />
             <div className="flex flex-col">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter leading-none italic uppercase text-brand-lime skew-x-[-10deg]">
                 LOCKED IN

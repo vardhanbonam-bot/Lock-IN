@@ -61,7 +61,7 @@
   <circle cx="256" cy="256" r="230" fill="none" stroke="#BEF264" stroke-width="1" stroke-dasharray="8, 12" opacity="0.2" />
 
   <!-- Padlock (Scaled down and centered) -->
-  <g transform="translate(38.4, 38.4) scale(0.85)">
+  <g transform="translate(89.6, 89.6) scale(0.65)">
     <!-- Padlock Shackle (Heavy Arch) -->
     <path d="M166 230 V160 C166 110.3 206.3 70 256 70 C305.7 70 346 110.3 346 160 V230" 
           fill="none" 

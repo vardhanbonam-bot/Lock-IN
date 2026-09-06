@@ -655,8 +655,10 @@ export default function App() {
               ) : (
                 <TrackerTab 
                   dayData={activeDayData}
+                  allDays={days}
                   onChange={handleDayDataChange}
                   streakCount={streakCount}
+                  onOpenHistory={() => setActiveTab('history')}
                 />
               )}
             </motion.div>

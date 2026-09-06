@@ -457,10 +457,10 @@ export default function HistoryTab({ days, onSelectDate, onSwitchTab, currentUse
                   </>
                 ) : (
                   <>
-                    <th className="p-4">🎯 Daily Rehab Focus</th>
-                    <th className="p-4">🩹 Pain Δ (Before ➜ After)</th>
-                    <th className="p-4">📊 Daily KPIs</th>
-                    <th className="p-4">⚡ Deep Work Sessions</th>
+                    <th className="p-4">🎯 Big 3 & Objectives</th>
+                    <th className="p-4">1️⃣ Execution & Scores</th>
+                    <th className="p-4">📈 Trading & CAT Prep</th>
+                    <th className="p-4">💪 Body & Physio</th>
                   </>
                 )}
                 <th className="p-4 text-right pr-6">Action</th>
@@ -588,76 +588,96 @@ export default function HistoryTab({ days, onSelectDate, onSwitchTab, currentUse
                       )}
                     </td>
 
-                    {/* Rehab Focus */}
+                    {/* Big 3 & Objectives */}
                     <td className="p-4 max-w-xs">
                       <div>
-                        {day.rehabFocusText ? (
+                        {day.todaysBig3 && day.todaysBig3.some(b => b.trim()) ? (
+                          <div className="space-y-1">
+                            {day.todaysBig3.filter(b => b.trim()).slice(0, 2).map((item, bIdx) => (
+                              <div key={bIdx} className="text-xs text-white truncate flex items-center gap-1.5">
+                                <span className={day.todaysBig3Done?.[bIdx] ? "text-brand-lime font-bold" : "text-gray-500"}>
+                                  {day.todaysBig3Done?.[bIdx] ? "✓" : "○"}
+                                </span>
+                                <span className={day.todaysBig3Done?.[bIdx] ? "line-through text-gray-400" : ""}>
+                                  {item}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : day.rehabFocusText ? (
                           <div className="text-xs text-white font-medium line-clamp-2 leading-relaxed">
                             {day.rehabFocusText}
                           </div>
                         ) : (
-                          <div className="text-xs text-gray-600 italic">No specific focus strategy typed</div>
+                          <div className="text-xs text-gray-600 italic">No Big 3 logged</div>
                         )}
-                        <div className="flex items-center gap-2 mt-1 text-[9px] font-mono uppercase text-gray-500">
-                          <span>AM Routine: {amDone}/{amTotal}</span>
-                          <span>•</span>
-                          <span>PM Routine: {pmDone}/{pmTotal}</span>
-                        </div>
+                        {day.todaysRule && (
+                          <div className="text-[10px] text-brand-purple font-mono truncate mt-1">
+                            Rule: {day.todaysRule}
+                          </div>
+                        )}
                       </div>
                     </td>
 
-                    {/* Pain delta */}
+                    {/* Execution & Scores */}
                     <td className="p-4 whitespace-nowrap">
                       <div className="space-y-1">
-                        <div className="text-[10px] font-mono text-gray-400 flex items-center gap-1">
-                          <span className="text-brand-lime font-black">AM:</span>
-                          <span>{day.rehab1?.painBefore || 0}/10</span>
-                          <span className="text-gray-500">➜</span>
-                          <span className="text-brand-lime font-black">{day.rehab1?.painAfter || 0}/10</span>
+                        <div className="text-xs font-mono font-black text-brand-lime flex items-center gap-1">
+                          <span>Exec:</span>
+                          <span>{day.executionScore ?? 8}/10</span>
+                          <span className="text-gray-600">•</span>
+                          <span className="text-brand-purple">Day: {day.sevenDimensionScores?.overall ?? 8}/10</span>
                         </div>
-                        <div className="text-[10px] font-mono text-gray-400 flex items-center gap-1">
-                          <span className="text-brand-purple font-black">PM:</span>
-                          <span>{day.rehab2?.painBefore || 0}/10</span>
-                          <span className="text-gray-500">➜</span>
-                          <span className="text-brand-purple font-black">{day.rehab2?.painAfter || 0}/10</span>
+                        <div className="text-[10px] font-mono text-gray-400">
+                          Sleep: {day.sleepDuration || day.kpiSleepHours || '7.5'}h • Water: {day.waterLitersActual || 2.5}L
                         </div>
                       </div>
                     </td>
 
-                    {/* KPIs */}
-                    <td className="p-4 whitespace-nowrap">
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                        <div className="text-[10px] font-mono text-gray-400">
-                          <span className="text-gray-500">Sleep:</span> {day.kpiSleepHours || 0} hrs
-                        </div>
-                        <div className="text-[10px] font-mono text-gray-400">
-                          <span className="text-gray-500">Mood:</span> {day.kpiMoodScore || 0}/10
-                        </div>
-                        <div className="text-[10px] font-mono text-gray-400">
-                          <span className="text-gray-500">Pain:</span> {day.kpiPainScore || 0}/10
-                        </div>
-                        <div className="text-[10px] font-mono text-gray-400">
-                          <span className="text-gray-500">Floor:</span> {nonNegsDone}/3 non-negs
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Deep work sessions */}
+                    {/* Trading & CAT Prep */}
                     <td className="p-4 max-w-xs">
+                      <div className="space-y-1 text-xs">
+                        {day.preMarketSentiment && (
+                          <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold">
+                            <span className={
+                              day.preMarketSentiment === 'Bullish'
+                                ? 'text-brand-lime'
+                                : day.preMarketSentiment === 'Bearish'
+                                ? 'text-brand-coral'
+                                : 'text-yellow-400'
+                            }>
+                              ● {day.preMarketSentiment}
+                            </span>
+                            {day.tradingTopic && (
+                              <span className="text-gray-300 truncate max-w-[120px]">
+                                • {day.tradingTopic}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {day.catTopicCategory ? (
+                          <div className="text-[10px] font-mono text-cyan-400 truncate">
+                            CAT: {day.catTopicCategory} ({day.catQuestionsAttempted || 0} Qs
+                            {day.catQuestionsAttempted ? `, ${(((day.catQuestionsCorrect || 0) / (day.catQuestionsAttempted || 1)) * 100).toFixed(0)}%` : ''})
+                          </div>
+                        ) : (
+                          <div className="text-[10px] text-gray-500 italic">CAT prep pending</div>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Body & Physio */}
+                    <td className="p-4 whitespace-nowrap">
                       <div className="space-y-1">
-                        {day.deepWork1Task && (
-                          <div className="text-[10px] text-gray-400 truncate max-w-[200px]">
-                            <span className="font-bold text-brand-lime">#1:</span> {day.deepWork1Task} ({day.deepWork1Hours || 0}h)
-                          </div>
-                        )}
-                        {day.deepWork2Task && (
-                          <div className="text-[10px] text-gray-400 truncate max-w-[200px]">
-                            <span className="font-bold text-brand-purple">#2:</span> {day.deepWork2Task} ({day.deepWork2Hours || 0}h)
-                          </div>
-                        )}
-                        {!day.deepWork1Task && !day.deepWork2Task && (
-                          <span className="text-xs text-gray-600 italic">No deep work sessions recorded</span>
-                        )}
+                        <div className="text-[10px] font-mono text-gray-300 flex items-center gap-1">
+                          <span className="text-brand-lime font-black">Pain:</span>
+                          <span>{day.workoutPainBefore ?? day.rehab1?.painBefore ?? 0}/10</span>
+                          <span className="text-gray-500">➜</span>
+                          <span className="text-brand-lime font-black">{day.workoutPainAfter ?? day.rehab1?.painAfter ?? 0}/10</span>
+                        </div>
+                        <div className="text-[10px] font-mono text-gray-400">
+                          {day.workoutDuration ?? 45}m • Mobility: ★{day.workoutMobility ?? 4}/5
+                        </div>
                       </div>
                     </td>
 

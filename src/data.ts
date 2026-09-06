@@ -113,7 +113,116 @@ export function createBlankDay(date: string): DayData {
     weeklyExperiments: '',
     weeklyPriorities: '',
     weeklyGratitude: '',
-    isConfirmed: false
+    isConfirmed: false,
+
+    // Sri Rama Satya Dashboard Defaults
+    bedTime: '22:30',
+    sleepDuration: '7.5',
+    sleepQuality: 4,
+    gotOutOfBedImmediately: true,
+    morningRoutineCompleted: false,
+    morningStartScore: 4,
+    energyScore: 8,
+    moodScore: 8,
+    mentalClarityScore: 8,
+    todaysBig3: ['', '', ''],
+    todaysBig3Done: [false, false, false],
+    todaysRule: 'Process over outcome.',
+
+    readingBook: '',
+    readingMinutes: 25,
+    readingPages: 10,
+    readingKeyIdea: '',
+    meditationMinutes: 15,
+    meditationQuality: 4,
+    meditationInsight: '',
+    morningBufferUsedFor: 'Walk & deliberate preparation',
+    morningPhysicalActivityMinutes: 20,
+    freshenedUpBy: '08:15',
+    breakfastQuality: 4,
+    breakfastProtein: true,
+    breakfastJunkFood: false,
+
+    preMarketSentiment: 'Neutral',
+    niftyIndex: '',
+    bankNiftyIndex: '',
+    otherIndices: '',
+    preMarketNews: [
+      { headline: '', credibility: 'Medium', impact: 'Neutral' },
+      { headline: '', credibility: 'Medium', impact: 'Neutral' }
+    ],
+    keySectors: '',
+    marketHypothesis: '',
+    eodRealityCheck: '',
+
+    tradingTopic: '',
+    tradingStudyMinutes: 90,
+    tradingConceptsLearned: '',
+    tradingExplainWithoutNotes: '',
+    tradingConceptStillConfused: '',
+    tradingPracticalApp: '',
+    tradingFeynmanTest: '',
+    tradesList: [],
+
+    lunchQuality: 4,
+    lunchEnergyAfter: 7,
+    hobbyActivity: '',
+    hobbyRechargeScore: 4,
+    workoutSessionName: 'Physio, Mobility & Core Conditioning',
+    workoutDuration: 45,
+    workoutExercises: [
+      { name: 'Band Pull-Aparts (3x15)', done: false },
+      { name: 'Rotator Cuff Rotations (3x12)', done: false },
+      { name: 'Hamstring Flossing (3x12)', done: false },
+      { name: 'Scapular Wall Slides (3x10)', done: false }
+    ],
+    workoutEffort: 8,
+    workoutPainBefore: 4,
+    workoutPainAfter: 2,
+    workoutMobility: 4,
+    workoutEnergyAfter: 8,
+    workoutUnusualNotes: '',
+
+    catTopicCategory: 'Quant',
+    catConcept: '',
+    catQuestionsAttempted: 0,
+    catQuestionsCorrect: 0,
+    catTimeMinutes: 60,
+    catMistakeClassification: {},
+    catMistakeNotes: '',
+
+    dinnerQuality: 4,
+    dinnerOvereating: false,
+    dinnerEnergyAfter: 7,
+    eveningMode: 'Mode A - Deep Work',
+    eveningUsedFor: '',
+
+    executionScore: 8,
+    todaysWins: ['', '', ''],
+    todaysMistakes: ['', '', ''],
+    todaysBiggestLearning: '',
+    rootCauseAnalysis: {
+      problem: '',
+      why1: '',
+      why2: '',
+      solution: ''
+    },
+    tomorrowsCorrections: ['', ''],
+    waterLitersTarget: 3.0,
+    waterLitersActual: 2.5,
+    dailySteps: 7500,
+    dailyScreenTime: '2h 15m',
+    sevenDimensionScores: {
+      sleepRecovery: 8,
+      mental: 8,
+      physical: 8,
+      learning: 8,
+      trading: 8,
+      execution: 8,
+      lifestyle: 8,
+      overall: 8
+    },
+    oneLineClose: 'Process over results. Tomorrow will be stronger.'
   };
 }
 
